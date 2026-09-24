@@ -64,38 +64,42 @@ Exemplo de break condicional:
 
 ```asm
 loop:
-    ; alguma operacao da LU deixa allzero ativo quando deve sair
-    xor
+    ; alguma operacao da LU usa allzero e emite true para a condição usada pela instrução EQ,
+    ; nisso o jz faz o PC carregar o valor que está no registrador A indicado pela instrução A.
+    AND
     jz done
 
-    ; continua o loop se allzero nao estava ativo
+    ; continua o loop se allzero nao for satisfeito.
     jmp loop
 
 done:
-    nop
+    ; inicialmente era nop, até ser implementado o halt para congelar o sistema interrompendo o clock. 
+    halt
 ```
 
 ## Tabela da ALU
 
-| U | OP1 | OP0 | Mnemônico | Resultado |
-| --- | --- | --- | --- | --- |
-| 0 | 0 | 0 | `and` | `X and Y` |
-| 0 | 0 | 1 | `or` | `X or Y` |
-| 0 | 1 | 0 | `xor` | `X xor Y` |
-| 0 | 1 | 1 | `not` | `invert X` |
-| 1 | 0 | 0 | `add` | `X + Y` |
-| 1 | 0 | 1 | `inc` | `X + 1` |
-| 1 | 1 | 0 | `sub` | `X - Y` |
-| 1 | 1 | 1 | `dec` | `X - 1` |
+| U |OP1|OP0| Mnemônico | Resultado |
+| - | - | - | --------- | --------- |
+| 0 | 0 | 0 | `and`     | `X and Y` |
+| 0 | 0 | 1 | `or`      | `X or Y`  |
+| 0 | 1 | 0 | `xor`     | `X xor Y` |
+| 0 | 1 | 1 | `not`     | `invert X`|
+| 1 | 0 | 0 | `add`     | `X + Y`   |
+| 1 | 0 | 1 | `inc`     | `X + 1`   |
+| 1 | 1 | 0 | `sub`     | `X - Y`   |
+| 1 | 1 | 1 | `dec`     | `X - 1`   |
 
 Modificadores aceitos pelo assembler:
+Podem ser combinados para modificar os operandos.
+Claro. A tabela Markdown original é bem mais limpa:
 
-| Sufixo | Bits ligados | Efeito |
-| --- | --- | --- |
-| sem sufixo | nenhum | Usa a operação normal. Exemplo: `sub` = `X - Y`. |
-| `_sw` | `SW` | Troca X e Y. Exemplo: `sub_sw` = `Y - X`. |
-| `_zx` | `ZX` | Zera o operando esquerdo. Exemplo: `sub_zx` = `0 - Y`. |
-| `_zxsw` | `ZX` e `SW` | Troca e zera o operando esquerdo efetivo. Exemplo: `sub_zxsw` = `0 - X`. |
+Sufixo	Bits ligados	Efeito
+
+(nenhum)	—	Usa a operação normal. Exemplo: sub = X - Y
+_sw	SW	Troca X e Y. Exemplo: sub_sw = Y - X
+_zx	ZX	Zera o operando esquerdo. Exemplo: sub_zx = 0 - Y
+_zxsw	ZX + SW	Troca e zera o operando esquerdo efetivo. Exemplo: sub_zxsw = 0 - X
 
 Sufixos de destino aceitos para gravar o resultado da ALU:
 
@@ -125,11 +129,12 @@ Exemplos: `add_d` soma `X + Y` e grava em D; `xor_a` grava `X xor Y` em A; `inc_
 | `<alu>_sw`, `<alu>_zx`, `<alu>_zxsw` | operação + modificador | Seleciona a mesma operação com troca/zero de operandos. |
 | `<alu>_a`, `<alu>_d`, `<alu>_m` | operação + destino | Grava o resultado da ALU em A, D ou RAM. |
 
-Os mnemônicos `jnz` e `halt` continuam fora do assembler até que o comportamento inverso de `allzero` e parada do clock sejam definidos no hardware.
+jnz utiliza a condição de allzero, enquanto halt aciona o mecanismo de parada do clock definido pelo hardware.
 Comando para copiar os valores dos binários para o clipboard:
+```bash
 xxd -b -c 2 examples/complex_safe.bin | awk '{print $2 $3}' | xclip -selection clipboard
-
-## Exemplos incluidos
+```
+## Exemplos incluídos
 
 - `examples/wc.asmx`: exemplo basico compativel com a ISA atual.
 - `examples/complex_super.asm`: programa de estresse com operacoes da ALU,
