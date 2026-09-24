@@ -1,3 +1,8 @@
+; Pseudo código executado neste programa:
+; int[] A, B, R;
+; A = {1,2,3,4}
+; B = {5,6,7,8}
+; R = SUM (MATRIX [](A, B));
 la 0
 m 1
 la 1
