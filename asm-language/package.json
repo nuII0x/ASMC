@@ -1,0 +1,34 @@
+{
+  "name": "mycpu-asm-language",
+  "displayName": "MyCPU Assembly",
+  "description": "Syntax highlighting para a ISA da minha CPU de 8 bits",
+  "version": "0.0.1",
+  "publisher": "willian",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "mycpu-asm",
+        "aliases": [
+          "MyCPU ASM",
+          "mycpu-asm"
+        ],
+        "extensions": [
+          ".asm"
+        ]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "mycpu-asm",
+        "scopeName": "source.mycpu-asm",
+        "path": "./syntaxes/mycpu-asm.tmLanguage.json"
+      }
+    ]
+  }
+}
