@@ -1,6 +1,6 @@
 {
-  "name": "MyCPU Assembly",
-  "scopeName": "source.mycpu-asm",
+  "name": "ASMC Assembly",
+  "scopeName": "source.asmc",
   "patterns": [
     {
       "include": "#comments"
@@ -22,7 +22,7 @@
     "comments": {
       "patterns": [
         {
-          "name": "comment.line.semicolon.mycpu",
+          "name": "comment.line.semicolon.cpu",
           "match": ";.*$"
         }
       ]
@@ -31,7 +31,7 @@
     "labels": {
       "patterns": [
         {
-          "name": "entity.name.label.mycpu",
+          "name": "entity.name.label.cpu",
           "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=:)"
         }
       ]
@@ -40,7 +40,7 @@
     "instructions": {
       "patterns": [
         {
-          "name": "keyword.control.mycpu",
+          "name": "keyword.control.cpu",
           "match": "\\b(la|m|load_d|store_d|add_d|add_sw|sub_d|sub_sw|inc_d|dec_d|and_d|or_d|xor_d|not_d|add_zx_d|add_zxsw_d|sub_zx_d|sub_zxsw_d|inc_zx_d|dec_zx_d|and_zx_d|or_zx_d|xor_zx_d|not_zx_d|xor_m|or_m|add|sub|inc_a|dec_a|not_a|xor|jeq|jgt|jlt|jmp|jeq_a|jgt_a|jlt_a|jmp_a|halt)\\b"
         }
       ]
@@ -49,7 +49,7 @@
     "registers": {
       "patterns": [
         {
-          "name": "variable.language.register.mycpu",
+          "name": "variable.language.register.cpu",
           "match": "\\b(A|D)\\b"
         }
       ]
@@ -58,11 +58,11 @@
     "numbers": {
       "patterns": [
         {
-          "name": "constant.numeric.hex.mycpu",
+          "name": "constant.numeric.hex.cpu",
           "match": "\\b0[xX][0-9A-Fa-f]+\\b"
         },
         {
-          "name": "constant.numeric.decimal.mycpu",
+          "name": "constant.numeric.decimal.cpu",
           "match": "\\b[0-9]+\\b"
         }
       ]

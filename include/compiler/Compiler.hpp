@@ -8,10 +8,14 @@
 
 namespace compiler {
 
+enum class Architecture {
+    arch8
+};
+
 class Compiler {
 public:
     explicit Compiler(
-        AddressWidth addressWidth = AddressWidth::Bits8
+        Architecture architecture = Architecture::arch8
     );
 
     std::vector<cpu::Word> compile(
@@ -19,7 +23,7 @@ public:
     );
 
 private:
-    AddressWidth addressWidth;
+    Architecture architecture;
 };
 
 }

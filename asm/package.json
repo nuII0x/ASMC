@@ -1,9 +1,9 @@
 {
-  "name": "mycpu-asm-language",
-  "displayName": "MyCPU Assembly",
-  "description": "Syntax highlighting para a ISA da minha CPU de 8 bits",
+  "name": "Assembly compiler",
+  "displayName": "ASMC Assembly Compiler",
+  "description": "Assembly syntax highlighting para a ISA do ASCM",
   "version": "0.0.1",
-  "publisher": "willian",
+  "publisher": "Null0x::Wahh R. S.",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -13,21 +13,22 @@
   "contributes": {
     "languages": [
       {
-        "id": "mycpu-asm",
+        "id": "asmc",
         "aliases": [
-          "MyCPU ASM",
-          "mycpu-asm"
+          "ASMC",
+          "asmc"
         ],
         "extensions": [
-          ".asm"
+          ".asm",
+          ".asmc"
         ]
       }
     ],
     "grammars": [
       {
-        "language": "mycpu-asm",
-        "scopeName": "source.mycpu-asm",
-        "path": "./syntaxes/mycpu-asm.tmLanguage.json"
+        "language": "asmc",
+        "scopeName": "source.asmc",
+        "path": "./syntaxes/asmc.tmLanguage.json"
       }
     ]
   }

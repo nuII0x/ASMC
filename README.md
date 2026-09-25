@@ -1,4 +1,4 @@
-# mycpu-compiler
+# ASMC — Assembly Compiler
 
 Compilador/assembler em C++20 para uma CPU de 8 bits com instruções de 16 bits.
 
@@ -14,12 +14,12 @@ cmake --build build
 ```
 ## Uso
 ```bash
-./build/mycpu examples/test.asm examples/test.bin
+./build/asmc examples/wc.asm examples/wc.bin arch8
 ```
 
 ## Comando para copiar os valores dos binários para o clipboard:
 ```bash
-xxd -b -c 2 examples/complex_safe.bin | awk '{print $2 $3}' | xclip -selection clipboard
+xxd -b -c 2 examples/complex_super.bin | awk '{print $2 $3}' | xclip -selection clipboard
 ```
 O .bin é escrito em big-endian: byte alto seguido do byte baixo de cada palavra de 16 bits.
 ## Descrição dos OPCodes:
@@ -53,11 +53,11 @@ Esta seção descreve a função de cada bit do campo de controle da instrução
 
 ### Latch de saída e transferência de dados
 
-Os opcodes de envio utilizam um **data latch** para manter temporariamente o resultado da operação. Dessa forma, o valor permanece estável até o próximo pulso do clock.
+Os opcodes de envio utilizam um **data latch** para manter temporariamente o resultado da operação. Dessa forma, o valor permanece estável até o clock ir para sinal baixo, então esse sinal é propagado para qualquer registrador que estiver no destino.
 
-Esse comportamento é importante principalmente nas operações de transferência entre a **RAM** e os registradores. Por exemplo, quando um valor da RAM precisa ser enviado para o registrador **D**, o resultado precisa permanecer disponível enquanto o endereço pode ser alterado pela próxima instrução.
+Esse comportamento é importante principalmente nas operações de transferência entre a **RAM** e os registradores de propósito geral. Por exemplo, quando um valor da RAM precisa ser enviado para o registrador **D**, o resultado precisa permanecer disponível enquanto o endereço pode ser alterado pela próxima instrução.
 
-Para realizar transferências entre a memória e os registradores sem alterar o valor dos dados, a **unidade aritmética (AU)** pode ser utilizada para realizar uma operação de soma com `0`. Dessa forma, o resultado permanece igual ao operando de entrada:
+Para realizar transferências entre a memória e os registradores sem alterar o valor dos dados, a **unidade aritmética (AU)** pode ser utilizada para realizar uma operação de soma com `0`. Dessa forma, o resultado permanece igual ao operando de entrada, e vai direto pro destino escolhido:
 
 ```text
 valor + 0 = valor
@@ -159,13 +159,29 @@ jnz utiliza a condição de allzero, enquanto halt aciona o mecanismo de parada 
 
 ## Exemplos incluídos
 
-- `examples/wc.asmx`: exemplo basico compativel com a ISA atual.
-- `examples/complex_super.asm`: programa de estresse com operacoes da ALU,
-  modificadores, destinos, labels e pseudo-instrucoes de salto.
+Os exemplos disponíveis em `examples/` são:
 
-Para gerar os binarios:
+- `examples/wc.asm` — exemplo básico da ISA atual.
+- `examples/complex_super.asm` — programa de estresse com operações da ALU,
+  modificadores, destinos, labels e pseudo-instruções de salto.
+- `examples/stress_test.asm` — programa de estresse para testar a ISA.
+- `examples/test_carry-out.asm` — teste do mecanismo de `carry-out`.
+- `examples/test_jump.asm` — teste das instruções de salto.
+
+Os arquivos `.bin` correspondentes são os binários gerados pelos exemplos
+que já foram compilados:
+
+- `examples/wc.bin`
+- `examples/complex_super.bin`
+- `examples/stress_test.bin`
+- `examples/test_jump.bin`
+
+Para gerar os binários:
 
 ```bash
-./build/mycpu examples/wc.asmx examples/wc.bin
-./build/mycpu examples/complex_super.asm examples/complex_super.bin
+./build/asmc examples/wc.asm examples/wc.bin
+./build/asmc examples/complex_super.asm examples/complex_super.bin
+./build/asmc examples/stress_test.asm examples/stress_test.bin
+./build/asmc examples/test_carry-out.asm examples/test_carry-out.bin
+./build/asmc examples/test_jump.asm examples/test_jump.bin
 ```

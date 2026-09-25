@@ -1,6 +1,5 @@
 #include "compiler/Compiler.hpp"
 
-#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -9,37 +8,47 @@
 
 int main(int argc, char* argv[])
 {
-    if (argc != 4) {
+    // ------------------------------------------------------------
+    // ARGUMENTOS
+    // ------------------------------------------------------------
+    //
+    // Uso:
+    //
+    //     asmc <entrada.asm> <saida.bin> [arquitetura]
+    //
+    // Se a arquitetura nao for informada, arch8 sera utilizada
+    // automaticamente.
+    //
+
+    if (argc != 3 && argc != 4) {
         std::cerr
-            << "Uso: mycpu <entrada.asm> <saida.bin> <-8|-16|-32>\n";
+            << "Uso: asmc <entrada.asm> <saida.bin> [arquitetura]\n";
+
         return 1;
     }
 
     // ------------------------------------------------------------
-    // LARGURA DO ENDERECO
+    // ARQUITETURA
     // ------------------------------------------------------------
 
-    compiler::AddressWidth addressWidth;
+    compiler::Architecture architecture =
+        compiler::Architecture::arch8;
 
-    const std::string width = argv[3];
+    if (argc == 4) {
 
-    if (width == "-8") {
-        addressWidth = compiler::AddressWidth::Bits8;
-    }
-    else if (width == "-16") {
-        addressWidth = compiler::AddressWidth::Bits16;
-    }
-    else if (width == "-32") {
-        addressWidth = compiler::AddressWidth::Bits32;
-    }
-    else {
-        std::cerr
-            << "Erro: largura de endereco invalida: "
-            << width
-            << "\n"
-            << "Use -8, -16 ou -32.\n";
+        const std::string arch = argv[3];
 
-        return 1;
+        if (arch == "arch8") {
+            architecture = compiler::Architecture::arch8;
+        }
+        else {
+            std::cerr
+                << "Erro: arquitetura não encontrada: "
+                << arch
+                << "\n";
+
+            return 1;
+        }
     }
 
     // ------------------------------------------------------------
@@ -57,9 +66,9 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    // Carregar o arquivo inteiro permite que o lexer mantenha linhas
-    // e colunas exatas nas mensagens de erro, inclusive em comentarios
-    // e linhas vazias.
+    // Carregar o arquivo inteiro permite que o lexer mantenha
+    // linhas e colunas exatas nas mensagens de erro, inclusive
+    // em comentarios e linhas vazias.
     std::string source(
         std::istreambuf_iterator<char>(in),
         {}
@@ -71,7 +80,7 @@ int main(int argc, char* argv[])
         // COMPILAR
         // --------------------------------------------------------
 
-        compiler::Compiler c(addressWidth);
+        compiler::Compiler c(architecture);
 
         auto code = c.compile(source);
 
@@ -96,11 +105,15 @@ int main(int argc, char* argv[])
         // --------------------------------------------------------
         // ESCREVER BINARIO
         // --------------------------------------------------------
-
-        // O formato externo e big-endian de forma explicita:
-        // primeiro o byte alto, depois o baixo.
         //
-        // Isso independe do endianness da maquina host.
+        // O formato externo e big-endian:
+        // primeiro o byte alto, depois o byte baixo.
+        //
+        // A instrucao possui 16 bits.
+        // A arquitetura determina as demais caracteristicas
+        // da CPU, incluindo a largura maxima do endereco.
+        //
+
         for (auto w : code) {
 
             out.put(
@@ -124,11 +137,7 @@ int main(int argc, char* argv[])
             << "Compilacao concluida.\n"
             << "Palavras geradas: "
             << code.size()
-            << "\n"
-            << "Largura de endereco: "
-            << width
             << "\n";
-
     }
     catch (const std::exception& e) {
 

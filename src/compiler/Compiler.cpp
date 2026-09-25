@@ -7,8 +7,8 @@
 
 namespace compiler {
 
-Compiler::Compiler(AddressWidth width)
-    : addressWidth(width)
+Compiler::Compiler(Architecture architecture)
+    : architecture(architecture)
 {
 }
 
@@ -27,6 +27,14 @@ std::vector<cpu::Word> Compiler::compile(
     auto program = p.parse();
 
     cpu::InstructionSet isa;
+
+    AddressWidth addressWidth;
+
+    switch (architecture) {
+        case Architecture::arch8:
+            addressWidth = AddressWidth::Bits8;
+            break;
+    }
 
     Assembler a(
         isa,
