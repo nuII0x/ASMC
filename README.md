@@ -1,41 +1,67 @@
 # mycpu-compiler
 
-Esqueleto de compilador/assembler em C++20 para uma CPU de 8 bits com instruções de 16 bits.
+Compilador/assembler em C++20 para uma CPU de 8 bits com instruções de 16 bits.
 
 Pipeline: source.asm -> Lexer -> Parser/AST -> Assembler -> machine.bin
 
 Os opcodes seguem a palavra de controle de 16 bits descrita abaixo. As operações da ALU usam a tabela `U/OP1/OP0` e podem ser alteradas por `SW` e `ZX`.
 
+Lista de comandos abaixo para conveniência, o xxd é utilizado para copiar os bits agrupados em 2 bytes (1 palavra) em cada linha para leitura humana.
 ## Build
+```bash
 cmake -S . -B build
 cmake --build build
-
+```
 ## Uso
+```bash
 ./build/mycpu examples/test.asm examples/test.bin
+```
 
+## Comando para copiar os valores dos binários para o clipboard:
+```bash
+xxd -b -c 2 examples/complex_safe.bin | awk '{print $2 $3}' | xclip -selection clipboard
+```
 O .bin é escrito em big-endian: byte alto seguido do byte baixo de cada palavra de 16 bits.
 ## Descrição dos OPCodes:
 Instrução de 16 bits, começando do bit mais alto pro mais baixo fica assim:
 Tabela de Instruções da CPU: 
+
 > CTRLSEL JUMP CARRY-IN L-OPSEL HALT A D A* U OP1 OP0 SW ZX LT EQ GT
-Explicação das instruções:
-CTRL-SEL: Seleciona se a saída será a resposta da ALU (1) ou o byte baixo da instrução de 16bits. 
-JUMP: Pula para o endereço da ROM que está no registrador A.
-CARRY-IN: Recebe a sobra (carry) da soma anterior para ser usada via software e encaminhada para a unidade aritmética. 
-L-OP-SEL: Left Operand Select: seleciona o operando da esquerda utilizado pela unidade lógica/aritmética. se for 0 usa o valor emitido pela RAM, se for 1 usa o que vem do registrador de endereço A. 
-0 (coluna 5): Bit reservado/fixo em 0. 
-A: Envia o resultado para o registrador A da memória combinada. 
-D: Envia o resultado para o registrador D da memória combinada. 
-A*: Envia o resultado para a memória RAM no endereço armazenado em A.
-Uma ressalva nos opcodes de envio é que o resultado é emitido e segurado por um data latch, deixando o valor temporariamente fixo até o próximo pulso do clock, isso é importante para o resultado que vem da RAM e vai para um registrador de valor (D) seja salvo antes que o endereço seja mudado pela próxima instrução dos opcodes, para enviar da memória pro registrador ou do registrador para a memória é aproveitado a unidade de aritmética pra adicionar 0 e com isso o valor do resultado seja o mesmo que o operando da esquerda e chegue no destino com o mesmo valor.  
-U: Seleciona qual unidade será utilizada: unidade lógica (LU) ou unidade aritmética (AU). 
-OP1: Bit de seleção da operação da unidade escolhida. 
-OP0: Bit de seleção da operação da unidade escolhida.
-SW: Troca (inverte) os valores dos operandos X e Y antes da operação. 
-ZX: Zera o operando da esquerda antes da operação. Especificamente o A + B por exemplo, vai zerar o B.
-LT: Compara o resultado da LU e indica a condição menor que (less than). 
-EQ: Usa o sinal allzero/igual da LU. Se verdadeiro em uma instrução de salto, o contador carrega o endereço que está no registrador A.
-GT: Compara o resultado da LU e indica a condição maior que (greater than).
+
+### Explicação das instruções
+
+Esta seção descreve a função de cada bit do campo de controle da instrução de 16 bits.
+
+| Campo | Descrição |
+|---|---|
+| **CTRL-SEL** | Seleciona a fonte da saída: `1` seleciona o resultado da **ALU**; `0` seleciona o byte baixo da instrução de 16 bits. |
+| **JUMP** | Quando ativo, realiza um salto para o endereço da **ROM** armazenado no registrador **A**. |
+| **CARRY-IN** | Recebe o *carry* da operação anterior para que ele possa ser utilizado pela próxima operação, sob controle do software, sendo encaminhado à unidade aritmética (**AU**). |
+| **L-OP-SEL** | *Left Operand Select*. Seleciona a origem do operando da esquerda utilizado pela unidade lógica/aritmética. `0` seleciona o valor proveniente da **RAM**; `1` seleciona o valor proveniente do registrador de endereço **A**. |
+| **0** | Bit reservado e fixado em `0`. |
+| **A** | Envia o resultado para o registrador **A** da memória combinada. |
+| **D** | Envia o resultado para o registrador **D** da memória combinada. |
+| **A\*** | Envia o resultado para a **RAM**, utilizando como endereço o valor armazenado no registrador **A**. |
+| **U** | Seleciona a unidade que será utilizada: **LU** (*Logical Unit*) ou **AU** (*Arithmetic Unit*). |
+| **OP1** | Bit de seleção da operação da unidade escolhida. |
+| **OP0** | Bit de seleção da operação da unidade escolhida. |
+| **SW** | *Swap*. Inverte os valores dos operandos **X** e **Y** antes da operação. |
+| **ZX** | Zera o operando da esquerda antes da operação. Por exemplo, em uma operação `A + B`, o operando **B** é zerado antes da operação. |
+| **LT** | Compara o resultado da **LU** e indica a condição *less than* (menor que). |
+| **EQ** | Utiliza o sinal `allzero` da **LU** para indicar igualdade. Quando verdadeiro em uma instrução de salto, o contador carrega o endereço armazenado no registrador **A**. |
+| **GT** | Compara o resultado da **LU** e indica a condição *greater than* (maior que). |
+
+### Latch de saída e transferência de dados
+
+Os opcodes de envio utilizam um **data latch** para manter temporariamente o resultado da operação. Dessa forma, o valor permanece estável até o próximo pulso do clock.
+
+Esse comportamento é importante principalmente nas operações de transferência entre a **RAM** e os registradores. Por exemplo, quando um valor da RAM precisa ser enviado para o registrador **D**, o resultado precisa permanecer disponível enquanto o endereço pode ser alterado pela próxima instrução.
+
+Para realizar transferências entre a memória e os registradores sem alterar o valor dos dados, a **unidade aritmética (AU)** pode ser utilizada para realizar uma operação de soma com `0`. Dessa forma, o resultado permanece igual ao operando de entrada:
+
+```text
+valor + 0 = valor
+```
 
 ## Contador de programa e saltos
 
@@ -130,10 +156,7 @@ Exemplos: `add_d` soma `X + Y` e grava em D; `xor_a` grava `X xor Y` em A; `inc_
 | `<alu>_a`, `<alu>_d`, `<alu>_m` | operação + destino | Grava o resultado da ALU em A, D ou RAM. |
 
 jnz utiliza a condição de allzero, enquanto halt aciona o mecanismo de parada do clock definido pelo hardware.
-Comando para copiar os valores dos binários para o clipboard:
-```bash
-xxd -b -c 2 examples/complex_safe.bin | awk '{print $2 $3}' | xclip -selection clipboard
-```
+
 ## Exemplos incluídos
 
 - `examples/wc.asmx`: exemplo basico compativel com a ISA atual.
