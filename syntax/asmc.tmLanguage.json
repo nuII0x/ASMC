@@ -1,0 +1,92 @@
+
+{
+  "name": "ASMC Assembly",
+  "scopeName": "source.asmc",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#labels"
+    },
+    {
+      "include": "#instructions"
+    },
+    {
+      "include": "#registers"
+    },
+    {
+      "include": "#numbers"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.semicolon.asmc",
+          "match": ";.*$"
+        }
+      ]
+    },
+    "labels": {
+      "patterns": [
+        {
+          "name": "entity.name.label.asmc",
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=:)"
+        }
+      ]
+    },
+    "instructions": {
+      "patterns": [
+        {
+          "name": "keyword.control.asmc",
+          "match": "\\b(nop|la|a|ld|d|lm|m|load_d|store_d|add_d|jmp_a|jeq_a|jz_a|jzero_a|jgt_a|jlt_a|jall_a|jc_a|halt)\\b"
+        },
+        {
+          "match": "\\b(and|or|xor|not|add|inc|sub|dec)(?=(_(?:sw|zx|zxsw))?(?:_[adm])?\\b)",
+          "captures": {
+            "1": {
+              "name": "keyword.operator.asmc"
+            }
+          }
+        },
+        {
+          "match": "\\b(jmp|jeq|jz|jzero|jgt|jlt|jall|jc)(?=_a\\b)",
+          "captures": {
+            "1": {
+              "name": "keyword.control.jump.asmc"
+            }
+          }
+        },
+        {
+          "match": "(?<=_)(sw|zx|zxsw)(?=_[adm]\\b|\\b)",
+          "name": "storage.modifier.asmc"
+        },
+        {
+          "match": "(?<=_)(a|d|m)\\b",
+          "name": "variable.parameter.destination.asmc"
+        }
+      ]
+    },
+    "registers": {
+      "patterns": [
+        {
+          "name": "variable.language.register.asmc",
+          "match": "\\b(A|D)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.asmc",
+          "match": "\\b0[xX][0-9A-Fa-f]+\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.asmc",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    }
+  }
+}

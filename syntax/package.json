@@ -28,7 +28,7 @@
       {
         "language": "asmc",
         "scopeName": "source.asmc",
-        "path": "./syntaxes/asmc.tmLanguage.json"
+        "path": "./asmc.tmLanguage.json"
       }
     ]
   }
