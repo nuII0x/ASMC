@@ -16,9 +16,9 @@ std::vector<cpu::Word> Compiler::compile(
     const std::string& s
 )
 {
-    // Cada etapa tem uma responsabilidade pequena e testavel.
-    // O texto vira tokens, os tokens viram AST e somente entao
-    // a ISA gera as palavras binarias.
+    // Each stage has a small, testable responsibility.
+    // The text becomes tokens, the tokens become an AST, and only then
+    // does the ISA generate the binary words.
 
     Lexer l(s);
     auto t = l.tokenize();

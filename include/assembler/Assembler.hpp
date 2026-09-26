@@ -16,62 +16,61 @@ enum class AddressWidth {
     Bits32
 };
 
-// Faz as duas passagens finais do compilador:
-// 1. resolve labels;
-// 2. transforma cada Instruction do AST em palavras de controle da CPU.
+// Performs the compiler's two final passes:
+// 1. resolves labels;
+// 2. lowers each AST Instruction into CPU control words.
 class Assembler {
 public:
     explicit Assembler(
         const cpu::InstructionSet&,
         AddressWidth addressWidth = AddressWidth::Bits8
     );
-
-    // Monta o programa e retorna as palavras de controle.
+    // Assembles the program and returns the resulting control words.
     //
-    // Pode lançar runtime_error para:
-    // - labels duplicadas;
-    // - programa maior que o espaço de endereçamento escolhido;
-    // - literais fora de 8 bits;
-    // - operandos inválidos;
-    // - mnemônicos inexistentes na ISA.
+    // May throw runtime_error for:
+    // - duplicate labels;
+    // - programs that exceed the selected address space;
+    // - literals that do not fit in 8 bits;
+    // - invalid operands;
+    // - mnemonics not defined by the ISA.
     std::vector<cpu::Word> assemble(const Program&);
 
 private:
-    // Primeira passagem:
-    // associa cada label ao endereço da instrução correspondente.
+    // First pass:
+    // maps each label to the address of its corresponding instruction.
     void collectLabels(const Program&);
 
-    // Quantas palavras uma instrução ocupará no binário final.
+    // Number of words the instruction will occupy in the final binary.    
     std::size_t instructionWordCount(const Instruction&) const;
 
-    // Segunda passagem:
-    // valida a instrução e gera as palavras de máquina.
+    // Second pass:
+    // validates the instruction and emits the machine words.
     void encodeInstruction(
         const Instruction&,
         std::vector<cpu::Word>&
     );
 
-    // Resolve número ou label como literal de 8 bits.
+    // Resolves a number or label as an 8-bit literal.
     //
-    // Usado pelas instruções que realmente possuem operandos de 8 bits
-    // na ISA atual.
+    // Used by instructions that actually take 8-bit operands
+    // in the current ISA.
     std::uint8_t resolveLiteral8(const Operand&);
 
-    // Resolve número ou label como endereço.
+    // Resolves a number or label as an address.
     //
-    // O endereço pode ter 8, 16 ou 32 bits internamente, dependendo
-    // da configuração do assembler.
+    // The address may be 8, 16, or 32 bits internally, depending
+    // on the assembler configuration.
     std::uint64_t resolveAddress(const Operand&);
 
-    // Retorna o maior endereço representável pela configuração atual.
+    // Returns the largest address representable by the current configuration.
     std::uint64_t maxAddress() const;
 
     const cpu::InstructionSet& instructionSet;
 
     AddressWidth addressWidth;
 
-    // O endereço é armazenado internamente em 64 bits para permitir
-    // endereçamento configurável de até 32 bits.
+    // Addresses are stored internally as 64-bit values to support
+    // configurable address widths up to 32 bits.
     std::unordered_map<std::string, std::uint64_t> labels;
 };
 

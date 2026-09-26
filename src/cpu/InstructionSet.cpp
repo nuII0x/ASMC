@@ -8,26 +8,26 @@ InstructionSet::InstructionSet()
         return static_cast<Word>(a | b);
     };
 
-    // NOP: palavra totalmente zerada.
+    // NOP: completely zeroed word.
     //
-    // CTRL_SEL = 0, portanto esta e uma instrucao do modo data.
-    // O bit JUMP (bit 14) nao tem efeito no modo data.
+    // CTRL_SEL = 0, so this is a data-mode instruction.
+    // The JUMP bit (bit 14) has no effect in data mode.
     instructions.emplace(
         "nop",
         InstructionDefinition{"nop", 0, OperandEncoding::None}
     );
 
     // ============================================================
-    // INSTRUCOES DE DADOS / LITERAIS
+    // DATA / LITERAL INSTRUCTIONS
     // ============================================================
     //
     // CTRL_SEL = 0.
     //
-    // O byte baixo da instrucao contem o literal de 8 bits.
-    // Os bits de destino determinam onde o valor sera armazenado.
+    // The low byte of the instruction contains the 8-bit literal.
+    // The destination bits determine where the value is stored.
     //
-    // Como CTRL_SEL = 0, o circuito ignora JUMP mesmo que o bit 14
-    // eventualmente apareca no campo da instrucao.
+    // Since CTRL_SEL = 0, the circuit ignores JUMP even if bit 14
+    // happens to be set in the instruction word.
 
     instructions.emplace(
         "a",
@@ -60,21 +60,21 @@ InstructionSet::InstructionSet()
     );
 
     // ============================================================
-    // INSTRUCOES DA ALU
+    // ALU INSTRUCTIONS
     // ============================================================
     //
     // CTRL_SEL = 1.
     //
-    // A ALU e selecionada por UNIT_SELECT / OP1 / OP0.
+    // The ALU operation is selected by UNIT_SELECT / OP1 / OP0.
     //
-    // SWAP_OPERANDS e ZERO_LEFT sao modificadores ortogonais:
-    // uma mesma operacao pode trocar X/Y, zerar o operando esquerdo,
-    // ou fazer as duas coisas.
+    // SWAP_OPERANDS and ZERO_LEFT are orthogonal modifiers:
+    // the same operation can swap X/Y, zero the left operand,
+    // or do both.
     //
-    // Nenhuma destas instrucoes ativa JUMP.
+    // None of these instructions enables JUMP.
     //
-    // Portanto, mesmo que o resultado seja EQ, GT ou LT, a CPU
-    // continua normalmente para a proxima instrucao.
+    // Therefore, even if the result is EQ, GT, or LT, the CPU
+    // continues normally to the next instruction.
 
     const auto addAlu =
         [this, wordOr](const std::string& name, Word operation)
@@ -153,24 +153,24 @@ InstructionSet::InstructionSet()
         addDestinations(name + "_zxsw", zxsw);
     };
 
-    // Operacoes logicas.
+    // Logical operations.
     addAlu("and", 0);
     addAlu("or", OP0);
     addAlu("xor", OP1);
     addAlu("not", OP1 | OP0);
 
-    // Operacoes aritmeticas.
+    // Arithmetic operations.
     addAlu("add", UNIT_SELECT);
     addAlu("inc", UNIT_SELECT | OP0);
     addAlu("sub", UNIT_SELECT | OP1);
     addAlu("dec", UNIT_SELECT | OP1 | OP0);
 
     // ============================================================
-    // ALIASES SEMANTICOS
+    // SEMANTIC ALIASES
     // ============================================================
     //
-    // Estes aliases continuam sendo operacoes normais da ALU.
-    // Nenhum deles ativa JUMP.
+    // These aliases are still regular ALU operations.
+    // None of them enables JUMP.
 
     instructions.emplace(
         "load_d",
@@ -204,145 +204,147 @@ InstructionSet::InstructionSet()
     );
 
     // ============================================================
-    // SALTOS
+    // JUMPS
     // ============================================================
     //
-    // IMPORTANTE:
+    // IMPORTANT:
     //
     // JUMP = bit 14.
     //
-    // Como todas estas instrucoes possuem CTRL_SEL = 1, elas estao
-    // no modo ALU e o circuito pode considerar o sinal JUMP.
+    // Since all of these instructions have CTRL_SEL = 1, they
+    // operate in ALU mode and the circuit may evaluate JUMP.
     //
-    // A logica conceitual do hardware sera:
+    // The conceptual hardware logic is:
     //
     //     JumpEnable = CTRL_SEL AND JUMP
     //
-    // e, para saltos condicionais:
+    // and, for conditional jumps:
     //
     //     JumpTaken = CTRL_SEL AND JUMP AND ConditionSatisfied
     //
-    // Portanto uma instrucao normal da ALU nunca salta apenas porque
-    // EQ, GT ou LT ficou verdadeiro.
+    // Therefore, a normal ALU instruction never jumps simply because
+    // EQ, GT, or LT is true.
 
     // ------------------------------------------------------------
-    // Salto incondicional
-    // Para fazer um salto incondicional: JumpAllways = CTRL_SEL AND JUMP AND ConditionForced------------------------------------------------------------
+    // Unconditional jump
+    // ------------------------------------------------------------
     //
     // jmp_a:
-    //     carrega o PC com o endereco armazenado em A.
+    //     loads the PC with the address stored in A.
     //
     // JUMP = 1.
     //
-    // Nenhuma condicao e necessaria.
+    // No condition is required.
 
-   instructions.emplace(
-    "jmp_a",
-    InstructionDefinition{
+    instructions.emplace(
         "jmp_a",
-        CTRL_SEL | JUMP,
-        OperandEncoding::None
-    }
-);
+        InstructionDefinition{
+            "jmp_a",
+            CTRL_SEL | JUMP,
+            OperandEncoding::None
+        }
+    );
 
-// ------------------------------------------------------------
-// Salto se igual a zero
-// ------------------------------------------------------------
+    // ------------------------------------------------------------
+    // Jump if equal to zero
+    // ------------------------------------------------------------
 
-instructions.emplace(
-    "jeq_a",
-    InstructionDefinition{
+    instructions.emplace(
         "jeq_a",
-        CTRL_SEL | JUMP | COND_EQ,
-        OperandEncoding::None
-    }
-);
+        InstructionDefinition{
+            "jeq_a",
+            CTRL_SEL | JUMP | COND_EQ,
+            OperandEncoding::None
+        }
+    );
 
-instructions.emplace(
-    "jz_a",
-    InstructionDefinition{
+    instructions.emplace(
         "jz_a",
-        CTRL_SEL | JUMP | COND_EQ,
-        OperandEncoding::None
-    }
-);
+        InstructionDefinition{
+            "jz_a",
+            CTRL_SEL | JUMP | COND_EQ,
+            OperandEncoding::None
+        }
+    );
 
-instructions.emplace(
-    "jzero_a",
-    InstructionDefinition{
+    instructions.emplace(
         "jzero_a",
-        CTRL_SEL | JUMP | COND_EQ,
-        OperandEncoding::None
-    }
-);
+        InstructionDefinition{
+            "jzero_a",
+            CTRL_SEL | JUMP | COND_EQ,
+            OperandEncoding::None
+        }
+    );
 
-// ------------------------------------------------------------
-// Salto se maior que zero
-// ------------------------------------------------------------
+    // ------------------------------------------------------------
+    // Jump if greater than zero
+    // ------------------------------------------------------------
 
-instructions.emplace(
-    "jgt_a",
-    InstructionDefinition{
+    instructions.emplace(
         "jgt_a",
-        CTRL_SEL | JUMP | COND_GT,
-        OperandEncoding::None
-    }
-);
+        InstructionDefinition{
+            "jgt_a",
+            CTRL_SEL | JUMP | COND_GT,
+            OperandEncoding::None
+        }
+    );
 
-// ------------------------------------------------------------
-// Salto se menor que zero
-// ------------------------------------------------------------
+    // ------------------------------------------------------------
+    // Jump if less than zero
+    // ------------------------------------------------------------
 
-instructions.emplace(
-    "jlt_a",
-    InstructionDefinition{
+    instructions.emplace(
         "jlt_a",
-        CTRL_SEL | JUMP | COND_LT,
-        OperandEncoding::None
-    }
-);
+        InstructionDefinition{
+            "jlt_a",
+            CTRL_SEL | JUMP | COND_LT,
+            OperandEncoding::None
+        }
+    );
 
-// ------------------------------------------------------------
-// Salto incondicional
-// ------------------------------------------------------------
+    // ------------------------------------------------------------
+    // Unconditional jump
+    // ------------------------------------------------------------
 
-instructions.emplace(
-    "jall_a",
-    InstructionDefinition{
+    instructions.emplace(
         "jall_a",
-        CTRL_SEL | JUMP | COND_GT | COND_EQ | COND_LT,
-        OperandEncoding::None
-    }
-);
+        InstructionDefinition{
+            "jall_a",
+            CTRL_SEL | JUMP | COND_GT | COND_EQ | COND_LT,
+            OperandEncoding::None
+        }
+    );
 
-// ------------------------------------------------------------
-// Salto se carry-out for 1
-// ------------------------------------------------------------
+    // ------------------------------------------------------------
+    // Jump if carry-out is 1
+    // ------------------------------------------------------------
 
-instructions.emplace(
-    "jc_a",
-    InstructionDefinition{
+    instructions.emplace(
         "jc_a",
-        CTRL_SEL | CARRY_IN | JUMP | COND_GT | COND_EQ | COND_LT,
-        OperandEncoding::None
-    }
-);
-// ------------------------------------------------------------
-// Halt, congela o sistema completamente.
-// ------------------------------------------------------------
-instructions.emplace(
-    "halt",
-    InstructionDefinition{
+        InstructionDefinition{
+            "jc_a",
+            CTRL_SEL | CARRY_IN | JUMP | COND_GT | COND_EQ | COND_LT,
+            OperandEncoding::None
+        }
+    );
+
+    // ------------------------------------------------------------
+    // Halt: freezes the entire system.
+    // ------------------------------------------------------------
+
+    instructions.emplace(
         "halt",
-        HALT,
-        OperandEncoding::None
-    }
-);
+        InstructionDefinition{
+            "halt",
+            HALT,
+            OperandEncoding::None
+        }
+    );
 }
 
 const InstructionDefinition* InstructionSet::find(const std::string& m) const
 {
-    // Centraliza a busca das instrucoes.
+    // Centralizes instruction lookup.
     auto it = instructions.find(m);
 
     return it == instructions.end()

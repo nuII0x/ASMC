@@ -27,15 +27,15 @@ bool Parser::match(TokenType t)
 
 void Parser::error(const std::string& m)
 {
-    throw std::runtime_error("Linha " + std::to_string(peek().line) + ": " + m);
+    throw std::runtime_error("Line " + std::to_string(peek().line) + ": " + m);
 }
 
 Program Parser::parse()
 {
     Program p;
 
-    // Linhas vazias sao semanticamente neutras. Todo o restante e delegado a
-    // parseLine, que consome uma label ou instrucao por vez.
+    // Empty lines are semantically neutral. Everything else is delegated to
+    // parseLine, which consumes one label or instruction at a time.
     while (peek().type != TokenType::EndOfFile) {
         if (match(TokenType::NewLine)) {
             continue;
@@ -50,19 +50,19 @@ Program Parser::parse()
 void Parser::parseLine(Program& p)
 {
     if (peek().type != TokenType::Identifier) {
-        error("esperado identificador ou instrucao");
+        error("expected identifier or instruction");
     }
 
     Token first = advance();
 
     if (match(TokenType::Colon)) {
-        // A label aponta para a proxima instrucao fonte. O assembler transforma
-        // esse indice em endereco real de ROM, porque pseudo-instrucoes como
-        // jmp podem ocupar mais de uma Word de 16 bits.
+        // The label points to the next source instruction. The assembler converts
+        // this index into the actual ROM address because pseudo-instructions such
+        // as jmp may occupy more than one 16-bit word.
         p.labels.push_back({first.text, p.instructions.size()});
 
-        // Se houver outra palavra na mesma linha, como "inicio: nop", nao a
-        // consumimos aqui. O proximo ciclo de parse a tratara como instrucao.
+        // If another token appears on the same line, such as "start: nop", we
+        // do not consume it here. The next parse cycle will handle it as an instruction.
         if (peek().type == TokenType::NewLine) {
             advance();
         }
@@ -72,8 +72,8 @@ void Parser::parseLine(Program& p)
 
     Instruction i{first.text, {}, first.line};
 
-    // A gramatica aceita operandos separados por virgula. A quantidade aceita
-    // por cada mnemomico e validada mais tarde pelo assembler.
+    // The grammar accepts operands separated by commas. The number of operands
+    // accepted by each mnemonic is validated later by the assembler.
     if (peek().type != TokenType::NewLine && peek().type != TokenType::EndOfFile) {
         i.operands.push_back(parseOperand());
 
@@ -82,10 +82,10 @@ void Parser::parseLine(Program& p)
         }
     }
 
-    // Caracteres que o lexer nao reconhece devem falhar logo no parser, antes
-    // de qualquer tentativa de gerar um binario parcial.
+    // Characters that the lexer does not recognize must fail in the parser,
+    // before any attempt is made to generate a partial binary.
     if (peek().type == TokenType::Unknown) {
-        error("token inesperado: " + peek().text);
+        error("unexpected token: " + peek().text);
     }
 
     if (peek().type == TokenType::NewLine) {
@@ -102,8 +102,8 @@ Operand Parser::parseOperand()
     if (t.type == TokenType::Number) {
         int base = 10;
 
-        // O lexer preserva 0x/0X no texto; aqui escolhemos a base antes de usar
-        // stoll para que 42 e 0x2A representem o mesmo valor no AST.
+        // The lexer preserves the 0x/0X prefix in the text; here we select the
+        // base before calling stoll so that 42 and 0x2A represent the same value in the AST.
         if (t.text.size() > 2 && t.text[0] == '0' && (t.text[1] == 'x' || t.text[1] == 'X')) {
             base = 16;
         }
@@ -112,12 +112,12 @@ Operand Parser::parseOperand()
     }
 
     if (t.type == TokenType::Identifier) {
-        // Uma referencia ainda nao resolvida pode ser uma label. O assembler a
-        // substitui pelo endereco final depois de conhecer todo o programa.
+        // An unresolved reference may be a label. The assembler replaces it
+        // with the final address after the entire program is known.
         return {Operand::Type::Identifier, t.text, 0};
     }
 
-    error("operando invalido: " + t.text);
+    error("invalid operand: " + t.text);
     return {};
 }
 

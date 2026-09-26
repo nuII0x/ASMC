@@ -7,22 +7,33 @@ Lexer::Lexer(const std::string& s) : source(s) {}
 
 char Lexer::peek() const
 {
-    // O sentinela evita acessar source fora dos limites e simplifica todos os
-    // lacos de leitura: '\0' sempre significa fim do arquivo.
+    // The sentinel prevents out-of-bounds access and simplifies all
+    // reading loops: '\0' always represents end of input.
     return position >= source.size() ? '\0' : source[position];
 }
 
 char Lexer::advance()
 {
     char c = peek();
+
     if (c == '\0') {
         return c;
     }
 
     ++position;
 
-    // A coluna aponta para o proximo caractere a ser lido. Ao cruzar uma quebra
-    // de linha, a proxima posicao visivel para o usuario passa a ser coluna 1.
+    if (c == '\r') {
+        // CRLF is treated as a single line break.
+        if (peek() == '\n') {
+            ++position;
+        }
+
+        ++line;
+        column = 1;
+
+        return '\n';
+    }
+
     if (c == '\n') {
         ++line;
         column = 1;
@@ -35,7 +46,8 @@ char Lexer::advance()
 
 void Lexer::skipWhitespace()
 {
-    // Newline nao entra aqui: ele delimita instrucoes e precisa virar token.
+    // Newline is not skipped here: it delimits instructions
+    // and must be emitted as a token.
     while (peek() == ' ' || peek() == '\t' || peek() == '\r') {
         advance();
     }
@@ -43,8 +55,8 @@ void Lexer::skipWhitespace()
 
 void Lexer::skipComment()
 {
-    // O ';' ja foi reconhecido por tokenize. A quebra de linha fica intacta para
-    // ser emitida no proximo ciclo como NewLine.
+    // ';' has already been recognized by tokenize. The line break
+    // remains untouched so it can be emitted as NewLine on the next cycle.
     while (peek() != '\0' && peek() != '\n') {
         advance();
     }
@@ -61,8 +73,8 @@ Token Lexer::readNumber()
     int c = column;
     std::string v;
 
-    // Consumir a sequencia inteira preserva "0xFF" em um unico token. O parser
-    // decide a base e converte o texto para um valor numerico.
+    // Consume the entire sequence so that "0xFF" remains a single token.
+    // The parser determines the base and converts the text to a numeric value.
     while (std::isalnum((unsigned char)peek())) {
         v += advance();
     }
@@ -76,8 +88,8 @@ Token Lexer::readIdentifier()
     int c = column;
     std::string v;
 
-    // Pontos e underscores permitem labels mais descritivas, como loop.main ou
-    // buffer_saida, sem precisarem de regras especiais no parser.
+    // Dots and underscores allow more descriptive labels, such as
+    // loop.main or output_buffer, without requiring special parser rules.
     while (std::isalnum((unsigned char)peek()) || peek() == '_' || peek() == '.') {
         v += advance();
     }
@@ -98,8 +110,8 @@ std::vector<Token> Lexer::tokenize()
             break;
         }
 
-        // Comentarios nao chegam ao parser; apenas a quebra de linha que os
-        // encerra continua relevante para a estrutura do programa.
+        // Comments never reach the parser; only the line break that
+        // terminates them remains relevant to the program structure.
         if (c == ';') {
             skipComment();
             continue;
@@ -113,7 +125,8 @@ std::vector<Token> Lexer::tokenize()
             continue;
         }
 
-        // A primeira letra define se o texto e um numero ou identificador.
+        // The first character determines whether the text is a number
+        // or an identifier.
         if (std::isdigit((unsigned char)c)) {
             t.push_back(readNumber());
             continue;
@@ -124,8 +137,8 @@ std::vector<Token> Lexer::tokenize()
             continue;
         }
 
-        // Tokens de um caractere sao tratados aqui para manter as funcoes de
-        // leitura focadas somente em sequencias de texto.
+        // Single-character tokens are handled here so the reading functions
+        // can remain focused on consuming text sequences.
         int l = line;
         int co = column;
 
@@ -134,29 +147,42 @@ std::vector<Token> Lexer::tokenize()
             advance();
             t.push_back(makeToken(TokenType::Comma, ",", l, co));
             break;
+
         case ':':
             advance();
             t.push_back(makeToken(TokenType::Colon, ":", l, co));
             break;
+
         case '[':
             advance();
             t.push_back(makeToken(TokenType::LBracket, "[", l, co));
             break;
+
         case ']':
             advance();
             t.push_back(makeToken(TokenType::RBracket, "]", l, co));
             break;
+
         case '+':
             advance();
             t.push_back(makeToken(TokenType::Plus, "+", l, co));
             break;
+
         case '-':
             advance();
             t.push_back(makeToken(TokenType::Minus, "-", l, co));
             break;
+
         default:
             advance();
-            t.push_back(makeToken(TokenType::Unknown, std::string(1, c), l, co));
+            t.push_back(
+                makeToken(
+                    TokenType::Unknown,
+                    std::string(1, c),
+                    l,
+                    co
+                )
+            );
             break;
         }
     }

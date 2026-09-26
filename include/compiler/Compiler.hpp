@@ -10,6 +10,9 @@ namespace compiler {
 
 enum class Architecture {
     arch8
+    //arch16
+    //arch32
+    //arch64
 };
 
 class Compiler {

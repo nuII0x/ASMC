@@ -6,29 +6,29 @@
 
 namespace compiler {
 
-// Transforma a sequencia de tokens em Program. O parser valida a estrutura do
-// assembly, enquanto a validade de cada mnemomico e de seus sinais pertence ao
-// assembler e a InstructionSet.
+// Converts the token sequence into a Program. The parser validates the assembly
+// structure, while mnemonic validity and operand constraints belong to the
+// assembler and InstructionSet.
 class Parser {
 public:
     explicit Parser(const std::vector<Token>&);
 
-    // Consome todos os tokens ate EndOfFile e preserva labels como enderecos de
-    // instrucoes, nao como offsets de bytes.
+    // Consumes all tokens up to EndOfFile and preserves labels as instruction
+    // addresses, not as byte offsets.
     Program parse();
 
 private:
-    // Helpers de navegacao: peek nao consome; advance consome; match consome
-    // somente quando o tipo esperado esta presente.
+    // Navigation helpers: peek does not consume; advance consumes; match consumes
+    // only when the expected token type is present.
     const Token& peek() const;
     const Token& advance();
     bool match(TokenType);
 
-    // Uma linha pode conter uma label, uma instrucao ou ambos (label: nop).
+    // A line may contain a label, an instruction, or both (label: nop).
     void parseLine(Program&);
     Operand parseOperand();
 
-    // Todos os erros sintaticos passam por aqui para incluir a linha atual.
+    // All syntax errors go through this function so the current line is included.
     void error(const std::string&);
 
     const std::vector<Token>& tokens;

@@ -5,44 +5,44 @@
 
 namespace compiler {
 
-// Representacao intermediaria entre o parser e o assembler. Ela descreve o
-// programa como foi escrito, sem assumir como cada instrucao sera codificada.
+// Intermediate representation between the parser and assembler. It describes
+// the program as written, without assuming how each instruction will be encoded.
 struct Operand {
     enum class Type {
         None,
         Number,
         Identifier,
-        // Tipos reservados para expansoes futuras da linguagem assembly.
+        // Reserved types for future assembly language extensions.
         Register,
         Memory,
     };
 
     Type type = Type::None;
-    // Texto original, preservado para mensagens de erro claras e labels.
+    // Original text, preserved for clear error messages and labels.
     std::string text;
-    // Valor numerico ja convertido pelo parser quando type e Number.
+    // Numeric value already converted by the parser when type is Number.
     std::int64_t value = 0;
 };
 
 struct Instruction {
-    // O assembler consulta este texto na InstructionSet para obter a codificacao.
+    // The assembler looks up this text in InstructionSet to obtain the encoding.
     std::string mnemonic;
     std::vector<Operand> operands;
-    // Linha de inicio da instrucao, usada para diagnosticos posteriores.
+    // Instruction's starting line, used for subsequent diagnostics.
     int line = 0;
 };
 
 struct Label {
     std::string name;
-    // Indice da proxima instrucao fonte. O assembler converte isso para endereco
-    // real em palavras depois de considerar pseudo-instrucoes expandidas.
-    // Uma label no fim do arquivo pode, portanto, apontar para instructions.size().
+    // Index of the next source instruction. The assembler converts this into
+    // an actual word address after accounting for expanded pseudo-instructions.
+    // A label at the end of the file may therefore point to instructions.size().
     std::size_t instructionIndex = 0;
 };
 
 struct Program {
-    // Labels ficam separados das instrucoes para que o assembler consiga fazer
-    // uma primeira passagem de resolucao antes de codificar qualquer palavra.
+    // Labels are kept separate from instructions so the assembler can perform
+    // a first resolution pass before encoding any words.
     std::vector<Instruction> instructions;
     std::vector<Label> labels;
 };

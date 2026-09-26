@@ -4,15 +4,15 @@
 
 namespace cpu {
 
-// Tipos que representam diretamente os barramentos da CPU. Manter estes aliases
-// centralizados evita que o tamanho de dados e enderecos fique espalhado pelo
-// compilador quando a arquitetura evoluir.
+// Types that directly represent the CPU's hardware buses. Keeping these aliases
+// centralized prevents data and address widths from being scattered throughout
+// the compiler as the architecture evolves.
 using Byte = std::uint8_t;
 using Address = std::uint8_t;
 using Word = std::uint16_t;
 
-// Usados tanto para documentar a arquitetura quanto para validar futuras
-// extensoes que precisem conhecer o tamanho fisico dos barramentos.
+// Used both to document the architecture and to validate future extensions
+// that need to know the physical width of the buses.
 constexpr std::size_t BYTE_BITS = 8;
 constexpr std::size_t WORD_BITS = 16;
 

@@ -1,9 +1,9 @@
 {
   "name": "Assembly compiler",
   "displayName": "ASMC Assembly Compiler",
-  "description": "Assembly syntax highlighting para a ISA do ASCM",
+  "description": "Syntax highlighting support for the ASCM assembly language",
   "version": "0.0.1",
-  "publisher": "Null0x::Wahh R. S.",
+  "publisher": "Null0x",
   "engines": {
     "vscode": "^1.80.0"
   },

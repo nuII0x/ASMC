@@ -7,88 +7,89 @@
 
 namespace cpu {
 
-// Mascaras dos sinais da palavra de controle de 16 bits.
+// Masks for the control signals in the 16-bit control word.
 //
-// Layout, do bit mais significativo para o menos significativo:
+// Layout, from most significant bit to least significant bit:
 //
 // CTRL_SEL | JUMP | CARRY_IN | LEFT_OPERAND_ADDRESS | HALT |
 // A | D | A* | UNIT_SELECT | OP1 | OP0 |
 // SWAP_OPERANDS | ZERO_LEFT | LT | EQ | GT
 //
-// Bit 11 liga o halt, envia um sinal 1 impedindo o recebimento do clock deixando o sistema congelado.
+// Bit 11 enables HALT. It sends a signal that prevents the clock
+// from being received, leaving the system frozen.
 //
-// O bit 14 (JUMP) somente tem efeito quando CTRL_SEL = 1,
-// ou seja, no modo ALU.
+// Bit 14 (JUMP) only has an effect when CTRL_SEL = 1,
+// that is, in ALU mode.
 //
-// No modo data (CTRL_SEL = 0), o circuito ignora JUMP.
+// In data mode (CTRL_SEL = 0), the circuit ignores JUMP.
 //
-// Cada valor abaixo e uma mascara, portanto os sinais podem ser
-// combinados com o operador | para formar uma unica cpu::Word.
+// Each value below is a mask, so the signals can be combined
+// with the | operator to form a single cpu::Word.
 enum ControlBit : Word {
 
     // ------------------------------------------------------------
-    // Bits 15 e 14
+    // Bits 15 and 14
     // ------------------------------------------------------------
 
     // Bit 15:
-    // seleciona o modo ALU.
+    // selects ALU mode.
     //
-    // 0 = modo data/literal
-    // 1 = modo ALU
+    // 0 = data/literal mode
+    // 1 = ALU mode
     CTRL_SEL = 1u << 15,
 
     // Bit 14:
-    // autoriza o salto do contador de programa.
+    // enables program-counter jumps.
     //
-    // IMPORTANTE:
-    // JUMP somente funciona quando CTRL_SEL = 1.
+    // IMPORTANT:
+    // JUMP only works when CTRL_SEL = 1.
     //
-    // Portanto:
+    // Therefore:
     //
-    // CTRL_SEL = 0, JUMP = 0 -> sem salto
-    // CTRL_SEL = 0, JUMP = 1 -> JUMP ignorado
-    // CTRL_SEL = 1, JUMP = 0 -> operacao ALU normal
-    // CTRL_SEL = 1, JUMP = 1 -> salto permitido
+    // CTRL_SEL = 0, JUMP = 0 -> no jump
+    // CTRL_SEL = 0, JUMP = 1 -> JUMP ignored
+    // CTRL_SEL = 1, JUMP = 0 -> normal ALU operation
+    // CTRL_SEL = 1, JUMP = 1 -> jump enabled
     JUMP = 1u << 14,
 
     // ------------------------------------------------------------
-    // Bits 13 e 12
+    // Bits 13 and 12
     // ------------------------------------------------------------
 
     // Bit 13:
-    // fornece o carry produzido pela operacao anterior
-    // para a unidade aritmetica.
+    // provides the carry produced by the previous operation
+    // to the arithmetic unit.
     CARRY_IN = 1u << 13,
 
     // Bit 12:
-    // escolhe A como operando esquerdo.
+    // selects A as the left operand.
     //
-    // Em zero, o circuito usa a RAM como operando esquerdo.
+    // When cleared, the circuit uses RAM as the left operand.
     LEFT_OPERAND_ADDRESS = 1u << 12,
 
     // ------------------------------------------------------------
     // Bit 11:
-    // HALT: interrompe a execução da CPU.
+    // HALT: stops CPU execution.
     //
-    // 0 = execução normal
-    // 1 = interrompe o clock e desativa o fornecimento de sinal
-    //     para os enables dos componentes.
+    // 0 = normal execution
+    // 1 = stops the clock and disables the enable signals
+    //     supplied to the components.
     HALT = 1u << 11,
 
     // ------------------------------------------------------------
-    // Bits 10, 9 e 8
+    // Bits 10, 9, and 8
     // ------------------------------------------------------------
 
-    // Destinos que recebem o resultado estabilizado no data latch.
+    // Destinations that receive the stabilized result from the data latch.
     DEST_A = 1u << 10,
     DEST_D = 1u << 9,
     DEST_RAM = 1u << 8,
 
     // ------------------------------------------------------------
-    // Bits 7, 6 e 5
+    // Bits 7, 6, and 5
     // ------------------------------------------------------------
 
-    // Selecao da operacao da ALU.
+    // ALU operation selection.
     //
     // U OP1 OP0:
     //
@@ -105,69 +106,88 @@ enum ControlBit : Word {
     OP0 = 1u << 5,
 
     // ------------------------------------------------------------
-    // Bits 4 e 3
+    // Bits 4 and 3
     // ------------------------------------------------------------
 
-    // Ajustes feitos nos operandos antes da operacao selecionada.
-    //SWAP_OPERANDS troca o X pelo Y, e vice-versa;
-    //ZERO_LEFT se 0 mantém os valores como estão, se for 1 zera o operando da esquerda, exemplo: X + Y, zera x, se SWAP_OPERANDS = 1 e ZERO_LEFT = 1, então zera Y.
+    // Operand transformations applied before the selected operation.
+    //
+    // SWAP_OPERANDS exchanges X and Y.
+    //
+    // ZERO_LEFT:
+    // 0 = leave the operands unchanged
+    // 1 = zero the left operand
+    //
+    // Example:
+    //
+    // X + Y
+    // ZERO_LEFT = 1 -> 0 + Y
+    //
+    // If SWAP_OPERANDS = 1 and ZERO_LEFT = 1:
+    //
+    // X + Y
+    //      ↓ swap
+    // Y + X
+    //      ↓ zero left operand
+    // 0 + X
     SWAP_OPERANDS = 1u << 4,
     ZERO_LEFT = 1u << 3,
 
     // ------------------------------------------------------------
-    // Bits 2, 1 e 0
+    // Bits 2, 1, and 0
     // ------------------------------------------------------------
 
-    // Seletores de condicao utilizados pelo controle de salto.
+    // Condition selectors used by jump control.
     //
-    // O bloco Condition recebe o resultado final de 8 bits da ALU
-    // e produz as informacoes:
+    // The Condition block receives the ALU's final 8-bit result
+    // and produces:
     //
-    //     LT = resultado < 0
-    //     EQ = resultado == 0
-    //     GT = resultado > 0
+    //     LT = result < 0
+    //     EQ = result == 0
+    //     GT = result > 0
     //
-    // Estes bits da instrucao nao calculam a condicao.
-    // Eles selecionam qual condicao deve ser usada pelo salto.
+    // These instruction bits do not calculate the condition.
+    // They select which condition is used by the jump.
     COND_LT = 1u << 2,
     COND_EQ = 1u << 1,
-    COND_GT = 1u << 0,
+    COND_GT = 1u << 0
 };
 
-// Define como os operandos escritos no assembly ocupam a palavra final.
+// Defines how operands written in assembly are encoded
+// into the final machine word.
 //
 // Literal8:
-//     usa exclusivamente os oito bits menos significativos.
-//     A instrucao deve permanecer no modo data (CTRL_SEL = 0).
+//     uses only the eight least significant bits.
+//     The instruction must remain in data mode (CTRL_SEL = 0).
 //
 enum class OperandEncoding {
     None,
     Literal8,
 };
 
-// Receita imutavel de codificacao de um mnemomico.
+// Immutable encoding definition for a mnemonic.
 //
-// controlWord contem os sinais de controle da instrucao.
-// operandEncoding informa ao assembler como interpretar o operando
-// escrito no assembly.
+// controlWord contains the instruction's control signals.
+// operandEncoding tells the assembler how to encode the operand
+// written in the assembly source.
 struct InstructionDefinition {
     std::string mnemonic;
     Word controlWord;
     OperandEncoding operandEncoding;
 };
 
-// Registro das instrucoes que o hardware atual suporta de forma definida.
+// Registry of instructions currently supported by the hardware.
 //
-// A busca e sensivel a maiusculas/minusculas porque o lexer preserva
-// o texto original do arquivo assembly.
+// Lookup is case-sensitive because the lexer preserves the original
+// text from the assembly source file.
 class InstructionSet {
 public:
     InstructionSet();
 
-    // Retorna nullptr quando o mnemomico nao pertence a esta ISA.
+    // Returns nullptr when the mnemonic is not part of this ISA.
     //
-    // O ponteiro permanece valido enquanto este InstructionSet existir,
-    // pois o registro e montado no construtor e nao e alterado depois disso.
+    // The pointer remains valid as long as this InstructionSet exists,
+    // because the registry is built in the constructor and is not
+    // modified afterward.
     const InstructionDefinition* find(const std::string&) const;
 
 private:

@@ -5,35 +5,41 @@
 
 namespace compiler {
 
-// Converte o texto assembly em tokens sem interpretar a ISA. Essa separacao faz
-// com que novos mnemomicos sejam adicionados na InstructionSet, sem alterar a
-// leitura basica de arquivos fonte.
+// Converts assembly source text into tokens without interpreting the ISA.
+// This separation allows new mnemonics to be added to InstructionSet
+// without changing the basic source-reading logic.
 class Lexer {
 public:
     explicit Lexer(const std::string&);
 
-    // Sempre termina a sequencia com EndOfFile, inclusive para arquivo vazio.
+    // Always terminates the token sequence with EndOfFile,
+    // including for an empty source file.
     std::vector<Token> tokenize();
 
 private:
-    // peek observa o caractere atual; advance o consome e atualiza a posicao.
+    // peek inspects the current character; advance consumes it
+    // and updates the current position.
     char peek() const;
     char advance();
 
-    // Espacos comuns sao ignorados, mas '\n' e preservado como delimitador de
-    // instrucao para que o parser consiga manter linhas e diagnosticos corretos.
+    // Whitespace is ignored, but '\n' is preserved as an instruction
+    // delimiter so the parser can maintain correct line information
+    // and diagnostics.
     void skipWhitespace();
     void skipComment();
 
-    // Numeros aceitam letras durante a leitura para preservar prefixos como 0x;
-    // a interpretacao decimal ou hexadecimal pertence ao parser.
+    // Numbers allow letters while being read to preserve prefixes
+    // such as 0x; decimal or hexadecimal interpretation belongs
+    // to the parser.
     Token readNumber();
     Token readIdentifier();
     Token makeToken(TokenType, const std::string&, int, int);
 
     std::string source;
-    // position e indice baseado em zero no texto; line e column sao baseados em
-    // um porque aparecem diretamente para quem escreveu o arquivo assembly.
+
+    // position is a zero-based index into the source text;
+    // line and column are one-based because they are displayed
+    // directly in assembly source diagnostics.
     std::size_t position = 0;
     int line = 1;
     int column = 1;

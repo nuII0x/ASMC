@@ -9,41 +9,50 @@
 int main(int argc, char* argv[])
 {
     // ------------------------------------------------------------
-    // ARGUMENTOS
+    // ARGUMENTS
     // ------------------------------------------------------------
     //
-    // Uso:
+    // Use:
     //
-    //     asmc <entrada.asm> <saida.bin> [arquitetura]
+    //     asmc <input.asm> <output.bin> [architecture]
     //
-    // Se a arquitetura nao for informada, arch8 sera utilizada
-    // automaticamente.
+    // If the architecture not informed, then the arch8 will be used
+    // automatically.
     //
 
     if (argc != 3 && argc != 4) {
         std::cerr
-            << "Uso: asmc <entrada.asm> <saida.bin> [arquitetura]\n";
+            << "Use: asmc <input.asm> <output.bin> [architecture]\n";
 
         return 1;
     }
 
     // ------------------------------------------------------------
-    // ARQUITETURA
+    // ARCHITECTURE
     // ------------------------------------------------------------
 
     compiler::Architecture architecture =
-        compiler::Architecture::arch8;
+    compiler::Architecture::arch8;
 
     if (argc == 4) {
 
         const std::string arch = argv[3];
 
         if (arch == "arch8") {
-            architecture = compiler::Architecture::arch8;
+            // Default architecture.
         }
+        /*else if (arch == "arch16") {
+            architecture = compiler::Architecture::arch16;
+        }
+        else if (arch == "arch32") {
+            architecture = compiler::Architecture::arch32;
+        }
+        else if (arch == "arch64") {
+            architecture = compiler::Architecture::arch64;
+        }*/
         else {
             std::cerr
-                << "Erro: arquitetura não encontrada: "
+                << "Error: architecture not found: "
                 << arch
                 << "\n";
 
@@ -52,23 +61,23 @@ int main(int argc, char* argv[])
     }
 
     // ------------------------------------------------------------
-    // ABRIR ARQUIVO DE ENTRADA
+    // OPEN INPUT FILE
     // ------------------------------------------------------------
 
     std::ifstream in(argv[1]);
 
     if (!in) {
         std::cerr
-            << "Erro: nao foi possivel abrir "
+            << "Error: It was not possible to open "
             << argv[1]
             << "\n";
 
         return 1;
     }
 
-    // Carregar o arquivo inteiro permite que o lexer mantenha
-    // linhas e colunas exatas nas mensagens de erro, inclusive
-    // em comentarios e linhas vazias.
+    // Loading the entire file allows the lexer to maintain
+    // exact line and column positions in error messages, including
+    // comments and empty lines.
     std::string source(
         std::istreambuf_iterator<char>(in),
         {}
@@ -77,7 +86,7 @@ int main(int argc, char* argv[])
     try {
 
         // --------------------------------------------------------
-        // COMPILAR
+        // COMPILE
         // --------------------------------------------------------
 
         compiler::Compiler c(architecture);
@@ -85,7 +94,7 @@ int main(int argc, char* argv[])
         auto code = c.compile(source);
 
         // --------------------------------------------------------
-        // ABRIR ARQUIVO DE SAIDA
+        // OPEN OUTPUT FILE
         // --------------------------------------------------------
 
         std::ofstream out(
@@ -95,25 +104,23 @@ int main(int argc, char* argv[])
 
         if (!out) {
             std::cerr
-                << "Erro ao criar "
+                << "Error in creating file "
                 << argv[2]
                 << "\n";
 
             return 1;
         }
-
         // --------------------------------------------------------
-        // ESCREVER BINARIO
+        // WRITE BINARY
         // --------------------------------------------------------
         //
-        // O formato externo e big-endian:
-        // primeiro o byte alto, depois o byte baixo.
+        // The external format is big-endian:
+        // first the high byte, then the low byte.
         //
-        // A instrucao possui 16 bits.
-        // A arquitetura determina as demais caracteristicas
-        // da CPU, incluindo a largura maxima do endereco.
+        // The instruction is 16 bits wide.
+        // The architecture determines the remaining characteristics
+        // of the CPU, including the maximum address width.
         //
-
         for (auto w : code) {
 
             out.put(
@@ -130,19 +137,19 @@ int main(int argc, char* argv[])
         }
 
         // --------------------------------------------------------
-        // RESULTADO
+        // RESULT
         // --------------------------------------------------------
 
         std::cout
-            << "Compilacao concluida.\n"
-            << "Palavras geradas: "
+            << "Compilation complete.\n"
+            << "Words generated: "
             << code.size()
             << "\n";
     }
     catch (const std::exception& e) {
 
         std::cerr
-            << "Erro: "
+            << "Error: "
             << e.what()
             << "\n";
 

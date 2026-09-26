@@ -28,10 +28,10 @@ std::uint64_t Assembler::maxAddress() const
         return 0xFFFFFFFFULL;
     }
 
-    // Nunca deveria acontecer, mas evita comportamento indefinido
-    // caso um valor inválido de enum seja recebido.
+    // Should never happen, but avoids undefined behavior
+    // if an invalid enum value is provided.
     throw std::runtime_error(
-        "Largura de endereco invalida"
+        "Invalid address width"
     );
 }
 
@@ -39,12 +39,12 @@ std::size_t Assembler::instructionWordCount(
     const Instruction& i
 ) const
 {
-    // Pseudo-instrucoes de salto ocupam:
+    // Jump pseudo-instructions expand to:
     //
-    //     la <destino>
+    //     la <target>
     //     jmp_a / jeq_a / jlt_a / jgt_a / jc_a
     //
-    // Portanto, duas palavras.
+    // Therefore, they occupy two words.
     if (
         i.mnemonic == "jmp" ||
         i.mnemonic == "jeq" ||
@@ -59,7 +59,7 @@ std::size_t Assembler::instructionWordCount(
 
     if (!d) {
         throw std::runtime_error(
-            "Instrucao desconhecida na linha " +
+            "Unknown instruction at line " +
             std::to_string(i.line) +
             ": " +
             i.mnemonic
@@ -84,11 +84,12 @@ void Assembler::collectLabels(const Program& p)
 
     for (const auto& i : p.instructions) {
 
-        // Se a próxima instrução começaria depois do maior endereço
-        // representável, o programa já ultrapassou o espaço disponível.
+        // If the next instruction would start beyond the largest
+        // representable address, the program has exceeded the
+        // available address space.
         if (address > maximum) {
             throw std::runtime_error(
-                "Programa excede " +
+                "Program exceeds " +
                 std::to_string(
                     static_cast<int>(
                         addressWidth == AddressWidth::Bits8
@@ -98,7 +99,7 @@ void Assembler::collectLabels(const Program& p)
                                 : 32
                     )
                 ) +
-                " bits de endereco"
+                "-bit address space"
             );
         }
 
@@ -107,21 +108,21 @@ void Assembler::collectLabels(const Program& p)
         address += instructionWordCount(i);
     }
 
-    // 'address' aqui representa o primeiro endereço depois do programa.
+    // 'address' now represents the first address after the program.
     //
-    // Exemplo com 8 bits:
+    // Example with 8-bit addresses:
     //
-    // 256 palavras:
+    // 256 words:
     // 0x00 ... 0xFF
-    // address final = 0x100
+    // final address = 0x100
     //
-    // Isso é válido, porque 0x100 representa o fim do programa,
-    // não um endereço que será executado.
+    // This is valid because 0x100 represents the end of the program,
+    // not an address that will be executed.
     //
-    // Mais de 256 palavras faria o próximo endereço ultrapassar 0xFF.
+    // More than 256 words would cause the next address to exceed 0xFF.
     if (address > maximum + 1) {
         throw std::runtime_error(
-            "Programa excede " +
+            "Program exceeds " +
             std::to_string(
                 static_cast<int>(
                     addressWidth == AddressWidth::Bits8
@@ -131,18 +132,18 @@ void Assembler::collectLabels(const Program& p)
                             : 32
                 )
             ) +
-            " bits de endereco"
+            "-bit address space"
         );
     }
 
-    // Endereço imediatamente após a última instrução.
+    // Address immediately after the last instruction.
     instructionAddresses.push_back(address);
 
     for (const auto& l : p.labels) {
 
         if (labels.contains(l.name)) {
             throw std::runtime_error(
-                "Label duplicado: " +
+                "Duplicate label: " +
                 l.name
             );
         }
@@ -162,7 +163,7 @@ std::uint64_t Assembler::resolveAddress(
 
         if (o.value < 0) {
             throw std::runtime_error(
-                "Endereco nao pode ser negativo: " +
+                "Address cannot be negative: " +
                 o.text
             );
         }
@@ -176,7 +177,7 @@ std::uint64_t Assembler::resolveAddress(
 
         if (it == labels.end()) {
             throw std::runtime_error(
-                "Label desconhecido: " +
+                "Unknown label: " +
                 o.text
             );
         }
@@ -186,7 +187,7 @@ std::uint64_t Assembler::resolveAddress(
     else {
 
         throw std::runtime_error(
-            "Tipo de operando ainda nao suportado"
+            "Unsupported operand type"
         );
     }
 
@@ -200,9 +201,9 @@ std::uint64_t Assembler::resolveAddress(
                     : 32;
 
         throw std::runtime_error(
-            "Endereco " +
+            "Address " +
             o.text +
-            " excede " +
+            " exceeds " +
             std::to_string(bits) +
             " bits"
         );
@@ -221,7 +222,7 @@ std::uint8_t Assembler::resolveLiteral8(
 
         if (o.value < 0 || o.value > 0xFF) {
             throw std::runtime_error(
-                "Literal excede 8 bits: " +
+                "Literal does not fit in 8 bits: " +
                 o.text
             );
         }
@@ -235,7 +236,7 @@ std::uint8_t Assembler::resolveLiteral8(
 
         if (it == labels.end()) {
             throw std::runtime_error(
-                "Label desconhecido: " +
+                "Unknown label: " +
                 o.text
             );
         }
@@ -245,20 +246,20 @@ std::uint8_t Assembler::resolveLiteral8(
     else {
 
         throw std::runtime_error(
-            "Tipo de operando ainda nao suportado"
+            "Unsupported operand type"
         );
     }
 
-    // Mesmo que o assembler esteja configurado para 16 ou 32 bits,
-    // esta função continua sendo estritamente de 8 bits.
+    // Even if the assembler is configured for 16- or 32-bit addresses,
+    // this function remains strictly 8-bit.
     //
-    // Isso é necessário porque a ISA atual possui instruções cujo
-    // operando ocupa somente o byte baixo da Word.
+    // This is necessary because the current ISA has instructions whose
+    // operand occupies only the low byte of the word.
     if (value > 0xFF) {
         throw std::runtime_error(
             "Literal '" +
             o.text +
-            "' nao cabe em 8 bits"
+            "' does not fit in 8 bits"
         );
     }
 
@@ -271,7 +272,7 @@ void Assembler::encodeInstruction(
 )
 {
     // ------------------------------------------------------------
-    // PSEUDO-INSTRUCOES DE SALTO
+    // JUMP PSEUDO-INSTRUCTIONS
     // ------------------------------------------------------------
 
     if (
@@ -284,36 +285,36 @@ void Assembler::encodeInstruction(
 
         if (i.operands.size() != 1) {
             throw std::runtime_error(
-                "Instrucao '" +
+                "Instruction '" +
                 i.mnemonic +
-                "' exige exatamente um destino"
+                "' requires exactly one target"
             );
         }
 
-        // A ISA atual carrega o destino através de 'la',
-        // cujo literal possui apenas 8 bits.
+        // The current ISA loads the target through 'la',
+        // whose literal is only 8 bits wide.
         //
-        // Portanto, embora o assembler possa trabalhar internamente
-        // com enderecos de 16 ou 32 bits, o salto físico atual ainda
-        // precisa de um endereço que caiba em 8 bits.
+        // Therefore, although the assembler can internally work
+        // with 16- or 32-bit addresses, the current physical jump
+        // still requires an address that fits in 8 bits.
         const auto target =
             resolveAddress(i.operands[0]);
 
         if (target > 0xFF) {
             throw std::runtime_error(
-                "Destino do salto '" +
+                "Jump target '" +
                 i.operands[0].text +
-                "' nao pode ser codificado pela ISA atual: " +
-                "o endereco carregado por 'la' possui apenas 8 bits"
+                "' cannot be encoded by the current ISA: " +
+                "the address loaded by 'la' is only 8 bits wide"
             );
         }
 
-        // Primeira palavra:
+        // First word:
         //
         //     la <target>
         //
-        // Na ISA atual, DEST_A seleciona o registrador A como destino
-        // e o byte baixo contém o literal.
+        // In the current ISA, DEST_A selects register A as the
+        // destination and the low byte contains the literal.
         output.push_back(
             static_cast<cpu::Word>(
                 cpu::DEST_A |
@@ -344,7 +345,7 @@ void Assembler::encodeInstruction(
 
         if (!d) {
             throw std::runtime_error(
-                "Instrucao fisica de salto inexistente: " +
+                "Physical jump instruction not found: " +
                 std::string(physicalJump)
             );
         }
@@ -355,7 +356,7 @@ void Assembler::encodeInstruction(
     }
 
     // ------------------------------------------------------------
-    // INSTRUCAO NORMAL
+    // NORMAL INSTRUCTION
     // ------------------------------------------------------------
 
     const auto* d =
@@ -363,7 +364,7 @@ void Assembler::encodeInstruction(
 
     if (!d) {
         throw std::runtime_error(
-            "Instrucao desconhecida na linha " +
+            "Unknown instruction at line " +
             std::to_string(i.line) +
             ": " +
             i.mnemonic
@@ -371,7 +372,7 @@ void Assembler::encodeInstruction(
     }
 
     // ------------------------------------------------------------
-    // INSTRUCAO COM LITERAL DE 8 BITS
+    // INSTRUCTION WITH AN 8-BIT LITERAL
     // ------------------------------------------------------------
 
     if (
@@ -379,14 +380,14 @@ void Assembler::encodeInstruction(
         i.operands.size() != 1
     ) {
         throw std::runtime_error(
-            "Instrucao '" +
+            "Instruction '" +
             i.mnemonic +
-            "' exige exatamente um operando"
+            "' requires exactly one operand"
         );
     }
 
     // ------------------------------------------------------------
-    // INSTRUCAO SEM OPERANDO
+    // INSTRUCTION WITH NO OPERAND
     // ------------------------------------------------------------
 
     if (
@@ -394,16 +395,16 @@ void Assembler::encodeInstruction(
         !i.operands.empty()
     ) {
         throw std::runtime_error(
-            "Instrucao '" +
+            "Instruction '" +
             i.mnemonic +
-            "' nao aceita operandos"
+            "' does not accept operands"
         );
     }
 
     cpu::Word w = d->controlWord;
 
-    // Se a instrução possuir literal de 8 bits,
-    // coloca o literal no byte baixo da Word.
+    // If the instruction has an 8-bit literal,
+    // place the literal in the low byte of the word.
     if (
         d->operandEncoding ==
         cpu::OperandEncoding::Literal8
@@ -418,19 +419,19 @@ std::vector<cpu::Word> Assembler::assemble(
     const Program& p
 )
 {
-    // PASSAGEM 1
+    // PASS 1
     //
-    // Descobre o endereço de cada label considerando inclusive
-    // pseudo-instruções que ocupam duas Words.
+    // Determine the address of each label, including pseudo-instructions
+    // that expand to two words.
     collectLabels(p);
 
     std::vector<cpu::Word> r;
 
     r.reserve(p.instructions.size());
 
-    // PASSAGEM 2
+    // PASS 2
     //
-    // Converte as instruções em Words.
+    // Encode the instructions into machine words.
     for (const auto& i : p.instructions) {
         encodeInstruction(i, r);
     }
