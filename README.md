@@ -1,4 +1,3 @@
-```md
 # ASMC — Assembly Compiler
 
 C++20 assembler/compiler for an 8-bit CPU with 16-bit instructions.
@@ -49,8 +48,8 @@ This section describes the function of each bit in the control field of the 16-b
 | **CARRY-IN** | Receives the carry from the previous operation so it can be used by the next operation, under software control, and passed to the arithmetic unit (**AU**). |
 | **L-OP-SEL** | *Left Operand Select*. Selects the source of the left operand used by the logic/arithmetic unit. `0` selects the value from **RAM**; `1` selects the value from the **A register**. |
 | **0** | Reserved bit, fixed at `0`. |
-| **A** | Sends the result to register **A** in the combined memory. |
-| **D** | Sends the result to register **D** in the combined memory. |
+| **A** | Sends the result to register **A** (*Address register*) in the combined memory. |
+| **D** | Sends the result to register **D** (*Data register*) in the combined memory. |
 | **A\*** | Sends the result to **RAM**, using the address stored in register **A**. |
 | **U** | Selects the unit to be used: **LU** (*Logical Unit*) or **AU** (*Arithmetic Unit*). |
 | **OP1** | Selection bit for the chosen unit’s operation. |
