@@ -53,7 +53,7 @@ More complex components can be constructed from these primitives when appropriat
 
 Machine Code
 
-The simulator executes machine code produced by the project's assembler.
+The simulator executes machine code produced by the assembler.
 
 Assembly source
       │
