@@ -1,10 +1,10 @@
-Machine
+# Machine Simulator
 
 This directory contains the C++ simulator for the 8-bit CPU.
 
 The simulator reproduces the behavior of the CPU architecture in software, providing an environment for executing and testing machine code.
 
-Purpose
+## Purpose
 
 The simulator is used to:
 
@@ -16,7 +16,7 @@ The simulator is used to:
 - Test architectural changes
 - Experiment with the CPU design
 
-Architecture
+## Architecture
 
 The simulated computer uses an 8-bit CPU with 16-bit instructions/control words.
 
@@ -35,12 +35,13 @@ The simulator models the main components of the machine, including:
 
 The implementation should remain close to the CPU architecture so that the simulator accurately represents the intended machine.
 
-Logic
+## Logic
 
 Basic digital operations may be implemented using simple logic primitives.
 
 For example:
 
+```cpp
 bool NAND(bool a, bool b) {
     return !(a & b);
 }
@@ -48,30 +49,33 @@ bool NAND(bool a, bool b) {
 bool INV(bool in) {
     return NAND(in, in);
 }
+```
 
 More complex components can be constructed from these primitives when appropriate.
 
-Machine Code
+## Machine Code
 
 The simulator executes machine code produced by the assembler.
 
+```
 Assembly source
-      │
-      ▼
-   Assembler
-      │
-      ▼
- Machine code
-      │
-      ▼
- Machine Simulator
-      │
-      ▼
-      CPU
+    │
+    ▼
+ Assembler
+    │
+    ▼
+Machine code
+    │
+    ▼
+Machine Simulator
+    │
+    ▼
+   CPU
+```
 
 The simulator and assembler must follow the same ISA.
 
-CPU Execution
+## CPU Execution
 
 The CPU is clock-driven.
 
@@ -79,6 +83,6 @@ The simulator should model CPU state changes according to clock cycles rather th
 
 This allows CPU behavior to be examined at the level of individual cycles and control signals.
 
-Status
+## Status
 
 The simulator is under development.
