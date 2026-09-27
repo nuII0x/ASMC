@@ -1,10 +1,10 @@
 #pragma once
 
 #include "logic/types/Bit.hpp"
-#include <array>
+
 #include <cstddef>
 
-namespace logic {
+namespace structural::logic {
 
 // ============================================================
 // NAND
@@ -12,7 +12,7 @@ namespace logic {
 // Every other gate is built from NAND.
 // ============================================================
 
-class Gate {
+class gate {
 public:
 
     // --------------------------------------------------------
@@ -22,7 +22,7 @@ public:
     [[nodiscard]]
     static constexpr Bit NAND(Bit a, Bit b) noexcept
     {
-        return !(a and b);
+        return not (a and b);
     }
 
     [[nodiscard]]
@@ -70,95 +70,95 @@ public:
     // N-bit gates
     // --------------------------------------------------------
 
-    template <std::size_t N>
+    template <LogicValue T>
     [[nodiscard]]
-    static constexpr Bits<N> NAND(
-        const Bits<N>& a,
-        const Bits<N>& b
+    static constexpr bits<T> NAND(
+        const bits<T>& a,
+        const bits<T>& b
     ) noexcept
     {
-        Bits<N> result{};
+        bits<T> result{};
 
-        for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t i = 0; i < BitCount<T>::value; ++i)
             result[i] = NAND(a[i], b[i]);
 
         return result;
     }
 
 
-    template <std::size_t N>
+    template <LogicValue T>
     [[nodiscard]]
-    static constexpr Bits<N> NOT(
-        const Bits<N>& a
+    static constexpr bits<T> NOT(
+        const bits<T>& a
     ) noexcept
     {
-        Bits<N> result{};
+        bits<T> result{};
 
-        for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t i = 0; i < BitCount<T>::value; ++i)
             result[i] = NOT(a[i]);
 
         return result;
     }
 
 
-    template <std::size_t N>
+    template <LogicValue T>
     [[nodiscard]]
-    static constexpr Bits<N> AND(
-        const Bits<N>& a,
-        const Bits<N>& b
+    static constexpr bits<T> AND(
+        const bits<T>& a,
+        const bits<T>& b
     ) noexcept
     {
-        Bits<N> result{};
+        bits<T> result{};
 
-        for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t i = 0; i < BitCount<T>::value; ++i)
             result[i] = AND(a[i], b[i]);
 
         return result;
     }
 
 
-    template <std::size_t N>
+    template <LogicValue T>
     [[nodiscard]]
-    static constexpr Bits<N> OR(
-        const Bits<N>& a,
-        const Bits<N>& b
+    static constexpr bits<T> OR(
+        const bits<T>& a,
+        const bits<T>& b
     ) noexcept
     {
-        Bits<N> result{};
+        bits<T> result{};
 
-        for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t i = 0; i < BitCount<T>::value; ++i)
             result[i] = OR(a[i], b[i]);
 
         return result;
     }
 
 
-    template <std::size_t N>
+    template <LogicValue T>
     [[nodiscard]]
-    static constexpr Bits<N> XOR(
-        const Bits<N>& a,
-        const Bits<N>& b
+    static constexpr bits<T> XOR(
+        const bits<T>& a,
+        const bits<T>& b
     ) noexcept
     {
-        Bits<N> result{};
+        bits<T> result{};
 
-        for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t i = 0; i < BitCount<T>::value; ++i)
             result[i] = XOR(a[i], b[i]);
 
         return result;
     }
 
 
-    template <std::size_t N>
+    template <LogicValue T>
     [[nodiscard]]
-    static constexpr Bits<N> XNOR(
-        const Bits<N>& a,
-        const Bits<N>& b
+    static constexpr bits<T> XNOR(
+        const bits<T>& a,
+        const bits<T>& b
     ) noexcept
     {
-        Bits<N> result{};
+        bits<T> result{};
 
-        for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t i = 0; i < BitCount<T>::value; ++i)
             result[i] = XNOR(a[i], b[i]);
 
         return result;
