@@ -35,15 +35,15 @@ public:
     static constexpr Bit AND(Bit a, Bit b) noexcept
     {
         const Bit n = NAND(a, b);
-        return NAND(n, n);
+        return NOT(n);
     }
 
     [[nodiscard]]
     static constexpr Bit OR(Bit a, Bit b) noexcept
     {
         return NAND(
-            NAND(a, a),
-            NAND(b, b)
+            NOT(a),
+            NOT(b)
         );
     }
 
@@ -62,7 +62,7 @@ public:
     static constexpr Bit XNOR(Bit a, Bit b) noexcept
     {
         const Bit x = XOR(a, b);
-        return NAND(x, x);
+        return NOT(x);
     }
 
 
