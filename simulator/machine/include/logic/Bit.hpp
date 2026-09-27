@@ -11,9 +11,10 @@ namespace logic {
 // Logical types
 // ============================================================
 //
-// Architectural numeric types and the fundamental logical bit.
+// Fundamental types used by both the compiler and the CPU
+// simulator.
 //
-//     Bit   -> single logical signal
+//     Bit   -> 1-bit logical signal
 //     Byte  -> 8-bit value
 //     Word  -> 16-bit value
 //     DWord -> 32-bit value
@@ -28,15 +29,19 @@ using QWord = std::uint64_t;
 
 
 // ============================================================
-// Architectural value concept
+// Bit widths
 // ============================================================
 //
-// Types that can be represented as a physical collection of
-// bits.
+// Physical width of each architectural type.
 //
-// Bit is included so that a single wire can also be represented
-// by bits<Bit> and Bus<Bit>.
-//
+
+inline constexpr std::size_t BYTE_BITS = 8;
+inline constexpr std::size_t WORD_BITS = 16;
+
+
+// ============================================================
+// Architectural value concept
+// ============================================================
 
 template <typename T>
 concept LogicValue =
@@ -51,10 +56,7 @@ concept LogicValue =
 // Bit count
 // ============================================================
 //
-// Defines how many physical bits belong to each logical type.
-//
-// BitCount is the single source of truth for the physical width
-// of the types used by the logic system.
+// Number of physical bits belonging to each logical type.
 //
 
 template <LogicValue T>
@@ -68,19 +70,12 @@ inline constexpr std::size_t BitCount =
 // Physical bit collection
 // ============================================================
 //
-// Represents the individual physical signals that form a
+// Represents the individual physical signals that compose a
 // logical value.
 //
-// Unlike Byte, Word, DWord and QWord, bits<T> does not represent
-// a numeric value. Each element is an independent Bit signal.
-//
-// Examples:
-//
-//     bits<Bit>   -> one physical signal
-//     bits<Byte>  -> eight physical signals
-//     bits<Word>  -> sixteen physical signals
-//     bits<DWord> -> thirty-two physical signals
-//     bits<QWord> -> sixty-four physical signals
+// This is different from Byte, Word, DWord and QWord:
+// those represent numeric values, while bits<T> represents
+// their individual physical signals.
 //
 
 template <LogicValue T>
