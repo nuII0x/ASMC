@@ -102,6 +102,25 @@ public:
     {
         return s ? b : a;
     }
+	// ========================================================
+    // DEMUX
+    // 1:2 Demultiplexer
+    // ========================================================
+    //
+    // s = 0 -> a
+    // s = 1 -> b
+	template <LogicValue T>
+	[[nodiscard]]
+	static constexpr std::array<bits<T>, 2> DEMUX(
+    	const bits<T>& d,
+    	Bit s
+	) noexcept
+	{
+    	return {
+       	 	d bitand not s,
+       		d bitand s
+    	};
+	}
 
 };
 

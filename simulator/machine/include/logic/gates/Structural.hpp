@@ -276,6 +276,36 @@ public:
 
         return result;
     }
+	
+	// ========================================================
+    // DEMUX
+    // 1:2 Demultiplexer
+    // ========================================================
+    //
+    // s = 0 -> a
+    // s = 1 -> b
+    //
+    // Structural implementation using NAND only.
+	template <LogicValue T>
+	[[nodiscard]]
+	static constexpr std::array<bits<T>, 2> DEMUX(
+  	  const bits<T>& d,
+	    Bit s
+	) noexcept
+	{
+ 	   std::array<bits<T>, 2> result{};
+	
+   		for (std::size_t i = 0; i < BitCount<T>; ++i)
+    	{
+   	     	const Bit n = NAND(d[i], s);
+
+        	result[0][i] = AND(d[i], n); // c0
+        	result[1][i] = INV(n);       // c1
+    	}
+
+    	return result;
+	}    
+	
 };
 
 } // namespace structural::logic
