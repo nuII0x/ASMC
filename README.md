@@ -1,6 +1,6 @@
 # ASMC — Assembly Compiler
 
-C++20 assembler/compiler for an 8-bit CPU with 16-bit instructions.
+C++20 ASMC assembler/compiler for an 8-bit CPU with 16-bit instructions.
 
 Pipeline: source.asm -> Lexer -> Parser/AST -> Assembler -> machine.bin
 
