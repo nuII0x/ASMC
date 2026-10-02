@@ -1,6 +1,6 @@
 #pragma once
 
-#include "include/logic/Gates.hpp"
+#include "logic/Gates.hpp"
 namespace combinational::logic
 {
     class Decoder2to4
