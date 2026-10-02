@@ -6,16 +6,6 @@ namespace structural::logic {
 class Gate {
 private:
 
-    // ========================================================
-    // Physical bit operation
-    // ========================================================
-    //
-    // These are implementation primitives used internally by
-    // the multibit gates.
-    //
-    // No public single-bit gate API is exposed.
-    //
-
     [[nodiscard]]
     static constexpr Bit BITNAND(
         Bit a,
@@ -24,7 +14,41 @@ private:
     {
         return not (a bitand b);
     }
+    [[nodiscard]]
+    static constexpr Bit LT0(Byte value) noexcept
+    {
+        return (value & 0x80u) != 0;
+    }
+    template <LogicValue T>
+    [[nodiscard]]
+    static constexpr Bit allZero(T value) noexcept
+    {
+    return value == T{0};
+    }
+    template <LogicValue T>
+    [[nodiscard]]
+    static constexpr Bit COND(
+    Bit lt,
+    Bit eq,
+    Bit gt,
+    T x
+    ) noexcept
+    {
+    const Bit negative =
+        (x >> (BitCount<T> - 1)) & 1;
 
+    const Bit zero =
+        x == T{0};
+
+    const Bit positive =
+        not negative and not zero;
+
+    return
+        (lt & negative) |
+        (eq & zero) |
+        (gt & positive);
+    }
+    
 public:
 
     // ========================================================
@@ -1295,6 +1319,662 @@ private:
             result_difference
         );
     }
+};
+template <LogicValue T>
+class Counter {
+private:
+    T value_{0};
+    Bit carry_{false};
+
+public:
+
+    constexpr Counter() noexcept = default;
+
+    [[nodiscard]]
+    constexpr T output() const noexcept
+    {
+        return value_;
+    }
+
+    [[nodiscard]]
+    constexpr Bit carry() const noexcept
+    {
+        return carry_;
+    }
+
+    constexpr void tick(
+        Bit cl,
+        Bit previous_cl,
+        Bit st,
+        T x
+    ) noexcept
+    {
+        if (cl and not previous_cl) {
+
+            if (st) {
+                value_ = x;
+                carry_ = false;
+                return;
+            }
+
+            const T old = value_;
+
+            value_ = static_cast<T>(old + T{1});
+            carry_ = old == std::numeric_limits<T>::max();
+        }
+    }
+};
+
+class LU {
+public:
+
+    [[nodiscard]]
+    static constexpr Byte compute(
+        Bit op1,
+        Bit op0,
+        Byte X,
+        Byte Y
+    ) noexcept
+    {
+        const Byte op = static_cast<Byte>(
+            (static_cast<Byte>(op1) << 1) |
+            static_cast<Byte>(op0)
+        );
+
+        switch (op) {
+
+            case 0b00:
+                return X & Y;
+
+            case 0b01:
+                return X | Y;
+
+            case 0b10:
+                return X ^ Y;
+
+            case 0b11:
+                return static_cast<Byte>(~X);
+
+            default:
+                return 0;
+        }
+    }
+};
+#pragma once
+
+#include "logic/types/Bit.hpp"
+#include "logic/types/Byte.hpp"
+
+namespace behavioral::logic {
+
+class AU {
+public:
+
+    struct Result {
+        Byte OUT;
+        Bit   c;
+        Bit   v;
+    };
+
+    [[nodiscard]]
+    static constexpr Result compute(
+        Bit  op1,
+        Bit  op0,
+        Byte x,
+        Byte y,
+        Bit  C
+    ) noexcept
+    {
+        const Byte op = static_cast<Byte>(
+            (static_cast<Byte>(op1) << 1) |
+            static_cast<Byte>(op0)
+        );
+
+        switch (op) {
+
+            // ------------------------------------------------
+            // ADD
+            // ------------------------------------------------
+
+            case 0b00: {
+                const uint16_t result =
+                    static_cast<uint16_t>(x) +
+                    static_cast<uint16_t>(y) +
+                    static_cast<uint16_t>(C);
+
+                const Byte OUT = static_cast<Byte>(result);
+
+                const Bit c =
+                    static_cast<Bit>((result >> 8) & 1u);
+
+                // Signed overflow:
+                // positive + positive -> negative
+                // negative + negative -> positive
+                const Bit v =
+                    static_cast<Bit>(
+                        ((~(x ^ y)) & (x ^ OUT) & 0x80u) != 0
+                    );
+
+                return {OUT, c, v};
+            }
+
+            // ------------------------------------------------
+            // INC
+            // ------------------------------------------------
+
+            case 0b01: {
+                const uint16_t result =
+                    static_cast<uint16_t>(x) +
+                    1u +
+                    static_cast<uint16_t>(C);
+
+                const Byte OUT = static_cast<Byte>(result);
+
+                const Bit c =
+                    static_cast<Bit>((result >> 8) & 1u);
+
+                const Bit v =
+                    static_cast<Bit>(
+                        ((~(x ^ 0x01u)) &
+                         (x ^ OUT) &
+                         0x80u) != 0
+                    );
+
+                return {OUT, c, v};
+            }
+
+            // ------------------------------------------------
+            // SUB
+            // ------------------------------------------------
+
+            case 0b10: {
+                const int16_t result =
+                    static_cast<int16_t>(x) -
+                    static_cast<int16_t>(y) -
+                    static_cast<int16_t>(C);
+
+                const Byte OUT =
+                    static_cast<Byte>(result);
+
+                const Bit c =
+                    static_cast<Bit>(
+                        static_cast<uint16_t>(x) <
+                        static_cast<uint16_t>(y) +
+                        static_cast<uint16_t>(C)
+                    );
+
+                // Signed overflow:
+                // positive - negative -> negative
+                // negative - positive -> positive
+                const Bit v =
+                    static_cast<Bit>(
+                        ((x ^ y) & (x ^ OUT) & 0x80u) != 0
+                    );
+
+                return {OUT, c, v};
+            }
+
+            // ------------------------------------------------
+            // DEC
+            // ------------------------------------------------
+
+            case 0b11: {
+                const int16_t result =
+                    static_cast<int16_t>(x) -
+                    1 -
+                    static_cast<int16_t>(C);
+
+                const Byte OUT =
+                    static_cast<Byte>(result);
+
+                const Bit c =
+                    static_cast<Bit>(
+                        static_cast<uint16_t>(x) <
+                        static_cast<uint16_t>(1u) +
+                        static_cast<uint16_t>(C)
+                    );
+
+                const Bit v =
+                    static_cast<Bit>(
+                        ((x ^ 0x01u) & (x ^ OUT) & 0x80u) != 0
+                    );
+
+                return {OUT, c, v};
+            }
+
+            default:
+                return {0, false, false};
+        }
+    }
+};
+
+class ALU {
+public:
+
+    struct Result {
+        Byte R;
+        Bit  v;
+        Bit  zero;
+    };
+
+private:
+
+    Bit carry_ = false;
+
+public:
+
+    // ========================================================
+    // Reset
+    // ========================================================
+
+    constexpr void reset() noexcept
+    {
+        carry_ = false;
+    }
+
+    // ========================================================
+    // Compute
+    // ========================================================
+
+    [[nodiscard]]
+    constexpr Result compute(
+        Bit  cl,
+        Bit  c,
+        Bit  u,
+        Bit  op1,
+        Bit  op0,
+        Bit  sw,
+        Bit  zx,
+        Bit  lt,
+        Bit  eq,
+        Bit  gt,
+        Byte x,
+        Byte y
+    ) noexcept
+    {
+        // ----------------------------------------------------
+        // Operand selection
+        // ----------------------------------------------------
+        //
+        // sw = 0 -> x = x, y = y
+        // sw = 1 -> x = y, y = x
+        //
+        // ----------------------------------------------------
+
+        Byte left  = sw ? y : x;
+        Byte right = sw ? x : y;
+
+        // ----------------------------------------------------
+        // Zero left operand
+        // ----------------------------------------------------
+
+        if (zx)
+            left = 0;
+
+        // ----------------------------------------------------
+        // Arithmetic unit
+        // ----------------------------------------------------
+
+        const auto arithmetic =
+            AU::compute(
+                op1,
+                op0,
+                left,
+                right,
+                carry_
+            );
+
+        // ----------------------------------------------------
+        // Logic unit
+        // ----------------------------------------------------
+
+        const Byte logic =
+            LU::compute(
+                op1,
+                op0,
+                left,
+                right
+            );
+
+        // ----------------------------------------------------
+        // Select AU / LU
+        // ----------------------------------------------------
+
+        const Byte R = u
+            ? arithmetic.OUT
+            : logic;
+
+        // ----------------------------------------------------
+        // Overflow
+        // ----------------------------------------------------
+        //
+        // LU has no arithmetic overflow.
+        //
+        // ----------------------------------------------------
+
+        const Bit v = u
+            ? arithmetic.v
+            : false;
+
+        // ----------------------------------------------------
+        // Condition
+        // ----------------------------------------------------
+        //
+        // COND8 receives:
+        //
+        //   R
+        //   lt
+        //   eq
+        //   gt
+        //
+        // Its exact implementation is represented here by
+        // the condition result.
+        //
+        // ----------------------------------------------------
+
+        const Bit zero =
+            COND8::compute(
+                R,
+                lt,
+                eq,
+                gt
+            );
+
+        // ----------------------------------------------------
+        // Carry register
+        // ----------------------------------------------------
+        //
+        // The original circuit has:
+        //
+        //     AU.c ──┐
+        //            AND ──► DFF
+        //     u ─────┘
+        //
+        // Therefore the carry register is updated only when
+        // the arithmetic unit is selected.
+        //
+        // ----------------------------------------------------
+
+        if (cl) {
+            carry_ =
+                static_cast<Bit>(
+                    u && arithmetic.c
+                );
+        }
+
+        return {
+            R,
+            v,
+            zero
+        };
+    }
+};
+
+class ALU_CTRL {
+public:
+
+    struct Result {
+        Bit  ctrl_sel;
+        Bit  halt_reset;
+        Bit  a;
+        Bit  d;
+        Bit  a_star;
+
+        Byte R;
+        Bit  v;
+        Bit  j;
+    };
+
+    // ========================================================
+    // Control selection
+    // ========================================================
+
+    [[nodiscard]]
+    static constexpr Bit ctrlSelect(
+        Bit i1,
+        Bit i0
+    ) noexcept
+    {
+        // i1:i0 = 01 selects ALU control.
+        return static_cast<Bit>(
+            (not i1) and i0
+        );
+    }
+
+    // ========================================================
+    // Destination A
+    // ========================================================
+
+    [[nodiscard]]
+    static constexpr Bit selectA(
+        Bit i1,
+        Bit i0
+    ) noexcept
+    {
+        return static_cast<Bit>(
+            i1 and (not i0)
+        );
+    }
+
+    // ========================================================
+    // Destination D
+    // ========================================================
+
+    [[nodiscard]]
+    static constexpr Bit selectD(
+        Bit i1,
+        Bit i0
+    ) noexcept
+    {
+        return static_cast<Bit>(
+            i1 and i0
+        );
+    }
+
+    // ========================================================
+    // Destination A*
+    // ========================================================
+
+    [[nodiscard]]
+    static constexpr Bit selectAStar(
+        Bit i1,
+        Bit i0
+    ) noexcept
+    {
+        return static_cast<Bit>(
+            (not i1) and (not i0)
+        );
+    }
+
+    // ========================================================
+    // ALU control
+    // ========================================================
+
+    struct ALUControl {
+        Bit u;
+        Bit op1;
+        Bit op0;
+        Bit sw;
+        Bit zx;
+        Bit lt;
+        Bit eq;
+        Bit gt;
+    };
+
+    [[nodiscard]]
+    static constexpr ALUControl decodeALU(
+        Bit i1,
+        Bit i0,
+        Byte control
+    ) noexcept
+    {
+        // The ALU control byte is only meaningful when
+        // i1:i0 selects the ALU instruction format.
+
+        if (i1 or (not i0)) {
+            return {};
+        }
+
+        return {
+            static_cast<Bit>((control >> 0) & 1u), // u
+            static_cast<Bit>((control >> 1) & 1u), // op1
+            static_cast<Bit>((control >> 2) & 1u), // op0
+            static_cast<Bit>((control >> 3) & 1u), // sw
+            static_cast<Bit>((control >> 4) & 1u), // zx
+            static_cast<Bit>((control >> 5) & 1u), // lt
+            static_cast<Bit>((control >> 6) & 1u), // eq
+            static_cast<Bit>((control >> 7) & 1u)  // gt
+        };
+    }
+
+    // ========================================================
+    // Complete decode
+    // ========================================================
+
+    [[nodiscard]]
+    static constexpr Result decode(
+        Bit  i1,
+        Bit  i0,
+        Bit  cl,
+        Bit  halt_reset,
+        Byte control,
+        Byte alu_result,
+        Bit  overflow,
+        Bit  jump
+    ) noexcept
+    {
+        const Bit ctrl_sel =
+            ctrlSelect(i1, i0);
+
+        return {
+            ctrl_sel,
+
+            halt_reset,
+
+            selectA(i1, i0),
+            selectD(i1, i0),
+            selectAStar(i1, i0),
+
+            alu_result,
+            overflow,
+            jump
+        };
+    }
+};
+
+class CTRL_SELECT {
+public:
+    template <LogicValue T>
+    struct Result {
+        Byte R;
+        T CTRL;
+    };
+
+    template <LogicValue T>
+    [[nodiscard]]
+    static constexpr Result<T> compute(
+        Bit s,
+        Byte R1,
+        Byte R0,
+        T CTRL
+    ) noexcept
+    {
+        return {
+            s ? R1 : R0,
+            CTRL
+        };
+    }
+};
+
+class CTRL_UNIT {
+public:
+    template <LogicValue T>
+    struct Result {
+        Bit  HALT;
+        Byte R;
+        T    CTRL;
+        Bit  v;
+    };
+
+    template <LogicValue T>
+    [[nodiscard]]
+    static constexpr Result<T> compute(
+        Bit  cl,
+        Byte i1,
+        Byte i0,
+        Byte A,
+        Byte A_star,
+        Byte D
+    ) noexcept
+    {
+        const auto alu = ALU_CTRL::compute(
+            i1,
+            cl,
+            i0,
+            A,
+            A_star,
+            D
+        );
+
+        const T ctrl =
+            static_cast<T>(alu.a)
+            | (static_cast<T>(alu.d)     << 1)
+            | (static_cast<T>(alu.a_star) << 2)
+            | (static_cast<T>(alu.j)     << 3);
+
+        const auto data = CTRL_SELECT::compute(
+            alu.ctrl_sel,
+            alu.R,
+            i0,
+            ctrl
+        );
+
+        return {
+            .HALT = alu.halt,
+            .R    = data.R,
+            .CTRL = data.CTRL,
+            .v    = alu.v
+        };
+    }
+};
+
+class COMPUTER {
+public:
+    struct Outputs {
+        Byte OUT0;
+        Byte OUT1;
+        Byte OUT2;
+        Byte OUT3;
+
+        Bit HALTED;
+    };
+
+    constexpr COMPUTER() noexcept = default;
+
+    void reset() noexcept
+    {
+        // Reset sequential components here.
+    }
+
+    [[nodiscard]]
+    constexpr Outputs outputs() const noexcept
+    {
+        return {
+            .OUT0 = out0_,
+            .OUT1 = out1_,
+            .OUT2 = out2_,
+            .OUT3 = out3_,
+            .HALTED = halted_
+        };
+    }
+
+private:
+    Byte out0_{};
+    Byte out1_{};
+    Byte out2_{};
+    Byte out3_{};
+
+    Bit halted_{false};
 };
 
 } // namespace structural::logic
